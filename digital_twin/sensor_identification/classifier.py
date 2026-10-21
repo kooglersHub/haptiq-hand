@@ -1,0 +1,422 @@
+"""Compatibility decisions with explicit ambiguity and calibration gates."""
+
+from collections.abc import Mapping
+from dataclasses import dataclass
+
+import numpy as np
+
+from .grasp_prior import empirical_pose
+from .limits import valid_boundaries
+from .matching import fit_model
+
+
+@dataclass(frozen=True)
+class IdentificationConfig:
+    pressure_threshold: float = 200.0
+    tolerance_mm: float = 1.5
+    hand_tolerance_mm: float = 3.0
+    point_spacing_mm: float = 2.0
+    coordinate_units: str = "mm"
+    calibrated: bool = False
+    quick_preview: bool = False
+    min_contacts: int = 8
+    min_spread_mm: float = 3.0
+    min_inlier_fraction: float = 1.0
+    score_margin: float = 1.0
+    stability_margin: float = 0.35
+
+    random_starts: int = 4
+    refine_starts: int = 6
+    icp_iterations: int = 15
+    max_nfev: int = 25
+    seed: int = 731
+
+    def __post_init__(self):
+        if not isinstance(self.quick_preview, bool):
+            raise ValueError("quick_preview must be boolean")
+        if self.coordinate_units not in ("mm", "m"):
+            raise ValueError("coordinate_units must be mm or m")
+        for key in (
+            "tolerance_mm",
+            "hand_tolerance_mm",
+            "min_spread_mm",
+            "score_margin",
+            "stability_margin",
+        ):
+            if not np.isfinite(getattr(self, key)) or getattr(self, key) <= 0:
+                raise ValueError(key + " must be finite and positive")
+        if (
+            isinstance(self.point_spacing_mm, bool)
+            or not np.isfinite(self.point_spacing_mm)
+            or self.point_spacing_mm < 0
+        ):
+            raise ValueError("point_spacing_mm must be finite and nonnegative")
+        if not np.isfinite(self.pressure_threshold) or not 0 <= self.pressure_threshold <= 4095:
+            raise ValueError("Invalid pressure threshold")
+        if not 0 < self.min_inlier_fraction <= 1 or not isinstance(self.calibrated, bool):
+            raise ValueError("Invalid validity configuration")
+        for key in ("min_contacts", "random_starts", "refine_starts", "icp_iterations", "max_nfev"):
+            v = getattr(self, key)
+            if (
+                isinstance(v, bool)
+                or not isinstance(v, int)
+                or v < (4 if key == "min_contacts" else 1)
+            ):
+                raise ValueError(key + " must be a positive integer (min_contacts >= 4)")
+
+
+def valid_measurements(points):
+    """Keep zero pressure; reject missing readings and duplicate/invalid IDs."""
+    clean, invalid, seen = [], 0, set()
+    if not isinstance(points, (list, tuple)):
+        return [], 1
+    for point in points:
+        try:
+            if not isinstance(point, Mapping) or point.get("valid", True) is not True:
+                raise ValueError()
+            ident = point["id"]
+            if not isinstance(ident, (str, int)) or isinstance(ident, bool) or ident in seen:
+                raise ValueError()
+            seen.add(ident)
+            values = [point[k] for k in ("x", "y", "z", "pressure")]
+            if any(
+                isinstance(v, bool) or not isinstance(v, (int, float)) or not np.isfinite(v)
+                for v in values
+            ):
+                raise ValueError()
+            if not 0 <= point["pressure"] <= 4095:
+                raise ValueError()
+            clean.append(dict(point))
+        except (KeyError, TypeError, ValueError):
+            invalid += 1
+    return clean, invalid
+
+
+def compare_anchored_candidates(fits, tolerance_mm):
+    usable = [name for name, fit in fits.items() if fit.get("placement_usable")]
+    if len(usable) != 2:
+        return None
+    a, b = (fits[name] for name in usable)
+    error_gap = abs(a["visible_surface_score_mm"] - b["visible_surface_score_mm"])
+    regions = set(a["physical_contact_region_support"]) | set(b["physical_contact_region_support"])
+    support_gap = np.mean(
+        [
+            abs(
+                a["physical_contact_region_support"].get(region, 0.0)
+                - b["physical_contact_region_support"].get(region, 0.0)
+            )
+            for region in regions
+        ]
+    )
+    # A quarter of the configured positional tolerance and five percentage
+    # points are a preview ambiguity band, not statistical identity confidence.
+    if error_gap > tolerance_mm * 0.25 or support_gap > 0.05:
+        return None
+    return dict(
+        candidates=usable,
+        balanced_error_gap_mm=float(error_gap),
+        balanced_support_gap=float(support_gap),
+        error_band_mm=tolerance_mm * 0.25,
+        support_band=0.05,
+        missing_thumb_contacts=all(
+            "thumb" not in fits[n]["physical_contact_region_support"] for n in usable
+        ),
+        interpretation="Both CAD models explain the measured contacts similarly; select a model to compare, identity unresolved.",
+    )
+
+
+def identify_sensor(
+    points,
+    models,
+    config=None,
+    *,
+    boundary_points=(),
+    progress=None,
+    thumb_hint=None,
+    coordinate_frame=None,
+    hand_snapshot=None,
+):
+    config = config or IdentificationConfig()
+    if set(models) != {"SENSOR_A", "SENSOR_B"}:
+        raise ValueError("Exactly SENSOR_A and SENSOR_B models are required")
+    boundaries = valid_boundaries(boundary_points)
+    clean, invalid = valid_measurements(points)
+    active = [p for p in clean if p["pressure"] > config.pressure_threshold]
+    result = dict(
+        classification="AMBIGUOUS",
+        reason="insufficient_contacts",
+        fits={},
+        valid_points=len(clean),
+        invalid_points=invalid,
+        contacts=len(active),
+        units="mm",
+        calibrated=config.calibrated,
+        quick_preview=config.quick_preview,
+        search="finite multistart local optimization; not a global infeasibility certificate",
+    )
+    inactive = valid_boundaries(
+        [
+            p
+            for p in clean
+            if p["pressure"] <= config.pressure_threshold and p.get("normal") is not None
+        ]
+    )
+    # Geometry remains valid when pressure is unknown. These points constrain
+    # the hand surface without inventing non-contact pressure observations.
+    surface = (
+        valid_boundaries(
+            [
+                p
+                for p in points
+                if isinstance(p, dict)
+                and p.get("normal") is not None
+                and p.get("valid", True) is True
+            ]
+        )
+        if isinstance(points, (list, tuple))
+        else []
+    )
+    limits = boundaries + surface
+    result.update(
+        hand_boundary_points=len(boundaries),
+        inactive_taxel_limits=len(inactive),
+        surface_taxel_limits=len(surface),
+        limit_method="exact triangle audit of local oriented hand patches; conservative, not a solid collision certificate",
+    )
+    result["accumulated_inactive_taxel_limits"] = sum(
+        p.get("kind") == "inactive_taxel" for p in boundaries
+    )
+    result["accumulated_unknown_taxel_limits"] = sum(
+        p.get("kind") == "unknown_taxel" for p in boundaries
+    )
+    result["space_constraints_available"] = bool(limits)
+    result["contact_anchor_available"] = bool(active)
+    if len(active) < config.min_contacts:
+        if not active and limits:
+            result["reason"] = "space_constraints_only"
+            result["constraint_interpretation"] = (
+                "Swept hand surfaces restrict candidate space; without contacts or a supplied object pose, global object placement is unanchored."
+            )
+        return result
+    scale = 1000.0 if config.coordinate_units == "m" else 1.0
+    xyz = np.array([[p[k] for k in ("x", "y", "z")] for p in active]) * scale
+    singular = np.linalg.svd(xyz - xyz.mean(axis=0), compute_uv=False) / np.sqrt(len(xyz))
+    if singular[1] < config.min_spread_mm:
+        result["reason"] = "insufficient_spatial_coverage"
+        return result
+    # A non-contact cell is NOT an empty-space constraint. Only a separately
+    # certified surface-free ball can be used, in physical millimetres.
+    negative = [
+        p
+        for p in clean
+        if p["pressure"] <= config.pressure_threshold
+        and p.get("surface_clearance_certified") is True
+        and isinstance(p.get("surface_clearance_mm"), (int, float))
+        and not isinstance(p.get("surface_clearance_mm"), bool)
+        and np.isfinite(p["surface_clearance_mm"])
+        and p["surface_clearance_mm"] > 0
+    ]
+    exclusions = (
+        np.array([[p[k] for k in ("x", "y", "z")] for p in negative], dtype=float).reshape(-1, 3)
+        * scale
+    )
+    radii = np.array([p["surface_clearance_mm"] for p in negative])
+    result["certified_exclusions"] = len(negative)
+    kwargs = dict(contact_pressures=np.array([p["pressure"] for p in active]))
+    # Normals must come from the same observed pose as each taxel. Never
+    # reconstruct them from a nearby point in an accumulated hand sweep.
+    normals = []
+    for point in active:
+        n = point.get("normal")
+        if (
+            not isinstance(n, (list, tuple))
+            or len(n) != 3
+            or any(
+                isinstance(v, bool) or not isinstance(v, (int, float)) or not np.isfinite(v)
+                for v in n
+            )
+            or not 0.9 <= np.linalg.norm(n) <= 1.1
+        ):
+            break
+        normals.append(np.asarray(n) / np.linalg.norm(n))
+    if len(normals) == len(active):
+        kwargs.update(
+            contact_normals=np.asarray(normals),
+            contact_groups=[str(p.get("region") or "contacts") for p in active],
+        )
+    thumb = [
+        p
+        for p in active
+        if str(p.get("region", "")).startswith("thumb_")
+        or str(p.get("taxel_id", p["id"])).startswith("thumb_")
+    ]
+    if len(thumb) >= 3:
+        kwargs["thumb_xyz"] = np.array([[p[k] for k in ("x", "y", "z")] for p in thumb]) * scale
+    if limits:
+        kwargs.update(
+            boundary_xyz=np.array([[p[k] for k in ("x", "y", "z")] for p in limits]) * scale,
+            boundary_normals=np.array([p["normal"] for p in limits]),
+        )
+        # Only explicitly identified rigid-palm samples define a grasp prior.
+        # Finger normals and arbitrary-frame clouds must not invent a palm.
+        palm = [p for p in limits if p.get("link") == "left_base_link" or p.get("region") == "palm"]
+        if len(palm) >= 8:
+            kwargs.update(
+                palm_xyz=np.array([[p[k] for k in ("x", "y", "z")] for p in palm]) * scale,
+                palm_normals=np.array([p["normal"] for p in palm]),
+            )
+    if hand_snapshot is not None:
+        from .finite_hand import FiniteHand
+
+        kwargs["finite_hand"] = FiniteHand.from_snapshot(hand_snapshot)
+    result["fits"] = {}
+    # Assembly STLs may be open, so signed mesh volume is not a size measure.
+    # Use the CAD bounding envelope in mm, independent of sensor names.
+    ordered = sorted(models, key=lambda name: (-float(np.prod(models[name].mesh.extents)), name))
+    larger = ordered[0]
+    result["placement_policy"] = "larger_first_with_smaller_fallback"
+    if thumb_hint:
+        ordered.reverse()
+        result["placement_policy"] = "thumb_closure_first_with_geometric_fallback"
+        result["first_guess"] = {**thumb_hint, "candidate": ordered[0]}
+    result["candidate_order"] = ordered
+    result["candidate_decisions"] = []
+    if progress and thumb_hint:
+        progress(dict(stage="thumb_first_guess", first_guess=result["first_guess"]))
+    for index, name in enumerate(ordered):
+        previous = ordered[index - 1] if index else None
+        reason = (
+            ("thumb_first" if thumb_hint else "larger_first")
+            if not index
+            else ("comparison" if result["fits"][previous]["compatible"] else "fallback")
+        )
+        result["candidate_decisions"].append(
+            dict(kind="trying", candidate=name, reason=reason, previous_candidate=previous)
+        )
+        model = models[name]
+        fit_kwargs = dict(kwargs)
+        prior = empirical_pose(model, coordinate_frame)
+        if prior is not None:
+            fit_kwargs["initial_pose"] = prior
+        if progress:
+
+            def candidate_progress(event, candidate=name):
+                progress(
+                    {
+                        **event,
+                        "candidate": candidate,
+                        "candidate_decisions": [dict(d) for d in result["candidate_decisions"]],
+                        **({"first_guess": result["first_guess"]} if thumb_hint else {}),
+                    }
+                )
+
+            fit_kwargs["progress"] = candidate_progress
+            candidate_progress(dict(stage="alignment", completed=0))
+        result["fits"][name] = fit_model(model, xyz, exclusions, radii, config, **fit_kwargs)
+        fit = result["fits"][name]
+        result["candidate_decisions"].append(
+            dict(
+                kind="checked",
+                candidate=name,
+                compatible=fit["compatible"],
+                rejection_reasons=list(fit.get("rejection_reasons", [])),
+            )
+        )
+        if progress:
+            candidate_progress(dict(stage="candidate_checked"))
+        # Quick placement only needs the first acceptable size. Detailed mode
+        # retains both searches for the independent identity/ambiguity gates.
+        if config.quick_preview and result["fits"][name]["compatible"]:
+            break
+    fits = result["fits"]
+    anchored = [
+        name
+        for name, fit in fits.items()
+        if fit.get("pose_evidence") == "known_placement_finite_cad"
+    ]
+    if anchored:
+        ranked = sorted(
+            anchored,
+            key=lambda name: (not fits[name].get("placement_usable", False), fits[name]["score"]),
+        )
+        best = ranked[0]
+        result.update(
+            reason="known_placement_provisional",
+            best_candidate=best,
+            pose_evidence="known_placement_finite_cad",
+            placement_reason="contact_fit_near_usual_insertion",
+            classification="AMBIGUOUS",
+        )
+        comparison = compare_anchored_candidates(
+            {name: fits[name] for name in anchored}, config.tolerance_mm
+        )
+        if comparison:
+            result.update(
+                reason="sensor_size_unresolved",
+                placement_reason="similar_contact_support",
+                candidate_comparison=comparison,
+            )
+            result.pop("best_candidate", None)
+            return result
+        if fits[best].get("placement_usable"):
+            result["placement_candidate"] = best
+        return result
+    oriented = [
+        fit for fit in fits.values() if fit.get("pose_evidence") == "oriented_surface_preview"
+    ]
+    if oriented:
+        result.update(
+            reason="contact_hand_geometry_conflict",
+            placement_reason="inconsistent_input_geometry",
+            geometry_conflict=oriented[0]["geometry_conflict"],
+            pose_evidence="oriented_surface_preview",
+            best_candidate=min(
+                fits,
+                key=lambda name: (
+                    -fits[name].get("visible_surface_balanced_inlier_fraction", 0.0),
+                    fits[name]["score"],
+                ),
+            ),
+        )
+        return result
+    acceptable = [name for name in ordered if name in fits and fits[name]["compatible"]]
+    if acceptable:
+        result["placement_candidate"] = acceptable[0]
+        result["placement_reason"] = (
+            "thumb_first_candidate_fits"
+            if thumb_hint and acceptable[0] == ordered[0]
+            else "geometric_fallback_after_thumb_guess"
+            if thumb_hint
+            else "larger_candidate_fits"
+            if acceptable[0] == larger
+            else "smaller_candidate_after_larger_rejected"
+        )
+    else:
+        result["placement_reason"] = "neither_candidate_fits"
+    result["larger_rejection_reasons"] = fits.get(larger, {}).get("rejection_reasons", [])
+    if config.quick_preview:
+        result["reason"] = "quick_placement"
+        result["best_candidate"] = result.get("placement_candidate") or min(
+            fits, key=lambda name: (not fits[name]["compatible"], fits[name]["score"])
+        )
+        return result
+    compatible = [name for name, fit in fits.items() if fit["compatible"]]
+    if len(compatible) == 2:
+        result["reason"] = "both_candidates_compatible"
+    elif not compatible:
+        result["reason"] = "neither_candidate_compatible_within_search"
+    else:
+        best = compatible[0]
+        other = next(n for n in fits if n != best)
+        result["best_candidate"] = best
+        if not config.calibrated:
+            result["reason"] = "calibration_unverified"
+        elif not all(
+            f["optimizer_success"] and f["consistent_refinements"] >= 2 for f in fits.values()
+        ):
+            result["reason"] = "alignment_search_unstable"
+        elif fits[other]["score"] - fits[best]["score"] < config.score_margin:
+            result["reason"] = "score_margin_too_small"
+        else:
+            result.update(classification=best, reason="one_candidate_clearly_more_consistent")
+    return result

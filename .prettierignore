@@ -1,0 +1,9 @@
+.venv/
+node_modules/
+maintenance/
+documents/
+verification/
+digital_twin/hand_twin_6dof.html
+digital_twin/tactile_2d.html
+digital_twin/*.json
+uv.lock

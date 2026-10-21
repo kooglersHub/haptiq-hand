@@ -1,0 +1,27 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+.DS_Store
+
+*.csv
+
+# Local CAD matching results and dependency cache
+sensor_identification_demo/
+.uv-cache/
+*.png
+.mypy_cache/
+
+# Development tools and local credentials
+.ruff_cache/
+node_modules/
+.env
+.env.*
+!.env.example
+maintenance/

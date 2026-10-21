@@ -1,0 +1,22 @@
+* text=auto eol=lf
+# Keep source text consistent across platforms.
+*.py text eol=lf
+*.js text eol=lf
+*.cjs text eol=lf
+*.md text eol=lf
+*.toml text eol=lf
+*.yml text eol=lf
+*.cmd text eol=crlf
+
+# These assets have byte-level provenance hashes or embedded geometry.
+*.json -text -whitespace
+*.html -text -whitespace
+*.urdf -text -whitespace
+*.stl -text
+*.stp -text
+*.pdf -text
+*.png -text
+
+# Generated embedded bundles do not define the project language mix.
+digital_twin/hand_twin_6dof.html linguist-generated=true
+digital_twin/tactile_2d.html linguist-generated=true
