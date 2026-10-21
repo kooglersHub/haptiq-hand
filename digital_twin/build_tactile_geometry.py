@@ -88,6 +88,27 @@ def sensor_rectangle(xy):
     return best[1:]
 
 
+def _preserve_rectangle_metadata(region, reference):
+    """Keep calibration identity across libm/BLAS roundoff, never move cells.
+
+    Only two descriptive rectangle fields may differ. Every cell coordinate,
+    normal, wiring index and other region field must match exactly first.
+    A material rectangle change is retained as a new geometry definition.
+    """
+    fields = ("rectangle_angle_rad", "rectangle_axes_xy")
+    if reference is None or not all(key in reference for key in fields):
+        return region
+    physical = {key: value for key, value in region.items() if key not in fields}
+    previous = {key: value for key, value in reference.items() if key not in fields}
+    if physical != previous:
+        return region
+    if not all(np.allclose(region[key], reference[key], rtol=0, atol=1e-12) for key in fields):
+        return region
+    region["rectangle_angle_rad"] = reference["rectangle_angle_rad"]
+    region["rectangle_axes_xy"] = [axis.copy() for axis in reference["rectangle_axes_xy"]]
+    return region
+
+
 def build(data):
     p = data["reference"]["primary_profiles"][PROFILE]
     frames = {p["root_link"]: np.eye(4)}
@@ -170,6 +191,12 @@ def build(data):
                 "cells": cells,
             }
         )
+    previous = data.get("tactile_geometry", {})
+    if previous.get("reference_sha256") == data["reference_sha256"]:
+        references = {region["key"]: region for region in previous.get("regions", [])}
+        result = [
+            _preserve_rectangle_metadata(region, references.get(region["key"])) for region in result
+        ]
     geometry = {
         "schema_version": 1,
         "profile": PROFILE,

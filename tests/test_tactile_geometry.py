@@ -3,6 +3,7 @@ import importlib.util
 import json
 import re
 import unittest
+from copy import deepcopy
 from pathlib import Path
 
 import numpy as np
@@ -31,6 +32,32 @@ class TactileGeometryTests(unittest.TestCase):
         self.assertEqual(generated, self.geometry)
         self.assertEqual(self.data["tactile_geometry"], self.geometry)
         self.assertEqual(generated["total_cells"], 1062)
+
+    def test_rectangle_roundoff_keeps_reference_only_when_cells_are_identical(self):
+        reference = deepcopy(self.geometry["regions"][0])
+        region = deepcopy(reference)
+        region["rectangle_angle_rad"] += 5e-16
+        region["rectangle_axes_xy"][0][0] += 5e-16
+        cells = region["cells"]
+        corrected = self.builder._preserve_rectangle_metadata(region, reference)
+        self.assertEqual(corrected, reference)
+        self.assertIs(corrected["cells"], cells)
+        self.assertIsNot(corrected["rectangle_axes_xy"], reference["rectangle_axes_xy"])
+
+    def test_material_rectangle_or_contact_changes_are_not_hidden(self):
+        reference = self.geometry["regions"][0]
+        for field in ("rectangle", "point"):
+            with self.subTest(field=field):
+                region = deepcopy(reference)
+                region["rectangle_angle_rad"] += 5e-16
+                if field == "rectangle":
+                    region["rectangle_axes_xy"][0][0] += 1e-5
+                else:
+                    region["cells"][0]["point_m"][0] += 1e-9
+                expected = deepcopy(region)
+                self.assertEqual(
+                    self.builder._preserve_rectangle_metadata(region, reference), expected
+                )
 
     def test_centres_intersect_own_sensor_mesh_in_own_local_frame(self):
         assets = {v["link"]: v for v in self.data["assets"]["rh56_tactile_toolkit_left"]}
