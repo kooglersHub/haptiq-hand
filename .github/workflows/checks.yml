@@ -12,7 +12,7 @@ jobs:
     env:
       OPENBLAS_NUM_THREADS: "1"
       OMP_NUM_THREADS: "1"
-      HAND_DATA_DIR: ${{ runner.temp }}/haptiq-data
+      HAND_DATA_DIR: /tmp/haptiq-unit-data
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
@@ -47,7 +47,7 @@ jobs:
     env:
       OPENBLAS_NUM_THREADS: "1"
       OMP_NUM_THREADS: "1"
-      HAND_DATA_DIR: ${{ runner.temp }}/haptiq-browser-data
+      HAND_DATA_DIR: /tmp/haptiq-browser-data
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
