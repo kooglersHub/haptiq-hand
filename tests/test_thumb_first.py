@@ -1,4 +1,3 @@
-import sys
 import unittest
 from dataclasses import replace
 from pathlib import Path
@@ -8,12 +7,11 @@ import numpy as np
 import trimesh
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
-from digital_twin.sensor_identification.adapter import identify_frame
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import fit_model
-from digital_twin.sensor_identification.thumb_prior import thumb_closure_hint
+from haptiq.estimation.adapter import identify_frame
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import fit_model
+from haptiq.estimation.thumb_prior import thumb_closure_hint
 
 
 class ThumbFirstTests(unittest.TestCase):
@@ -93,7 +91,8 @@ class ThumbFirstTests(unittest.TestCase):
     def test_small_first_progress_and_early_candidate_stop(self):
         events = []
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=self.fake_fit()
+            "haptiq.estimation.classifier.fit_model",
+            return_value=self.fake_fit(),
         ) as fit:
             result = identify_frame(
                 self.frame, self.models, quick_preview=True, progress=events.append
@@ -106,7 +105,7 @@ class ThumbFirstTests(unittest.TestCase):
 
     def test_failed_thumb_guess_falls_back(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             side_effect=[self.fake_fit(False), self.fake_fit()],
         ) as fit:
             result = identify_frame(self.frame, self.models, quick_preview=True)
@@ -116,7 +115,8 @@ class ThumbFirstTests(unittest.TestCase):
 
     def test_detailed_keeps_both_and_no_hint_keeps_large_first(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=self.fake_fit()
+            "haptiq.estimation.classifier.fit_model",
+            return_value=self.fake_fit(),
         ) as fit:
             result = identify_frame(self.frame, self.models, quick_preview=False)
             self.assertEqual(fit.call_count, 2)
@@ -141,7 +141,7 @@ class ThumbFirstTests(unittest.TestCase):
             boundary_xyz=np.array([[0.0, 0.0, 20.0]]), boundary_normals=np.array([[0.0, 0.0, 1.0]])
         )
         with patch(
-            "digital_twin.sensor_identification.matching.triangle_penetrations",
+            "haptiq.estimation.matching.triangle_penetrations",
             side_effect=[np.array([4.0]), np.array([0.0])],
         ) as audit:
             fit = fit_model(self.small, contacts, np.empty((0, 3)), np.array([]), config, **kwargs)
@@ -152,7 +152,7 @@ class ThumbFirstTests(unittest.TestCase):
     def test_quick_budget_is_bounded_even_when_no_pose_passes(self):
         config = IdentificationConfig(quick_preview=True)
         with patch(
-            "digital_twin.sensor_identification.matching._fit_model",
+            "haptiq.estimation.matching._fit_model",
             return_value=self.fake_fit(False),
         ) as fit:
             result = fit_model(self.small, np.zeros((8, 3)), np.empty((0, 3)), np.array([]), config)
@@ -161,7 +161,8 @@ class ThumbFirstTests(unittest.TestCase):
         self.assertEqual(result["search_pass"], "quick_short_search")
         self.assertFalse(result["compatible"])
         with patch(
-            "digital_twin.sensor_identification.matching._fit_model", return_value=self.fake_fit()
+            "haptiq.estimation.matching._fit_model",
+            return_value=self.fake_fit(),
         ) as fit:
             result = fit_model(
                 self.small,

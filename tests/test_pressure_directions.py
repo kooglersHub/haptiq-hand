@@ -6,13 +6,16 @@ import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig, identify_sensor
-from digital_twin.sensor_identification.contact_directions import (
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    identify_sensor,
+)
+from haptiq.estimation.contact_directions import (
     direction_residual,
     pressure_directions,
 )
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import fit_model
 
 
 class PressureDirectionTests(unittest.TestCase):
@@ -100,9 +103,7 @@ class PressureDirectionTests(unittest.TestCase):
         ]
         fit = dict(compatible=True, score=0.0, optimizer_success=True, consistent_refinements=2)
         config = replace(IdentificationConfig(), coordinate_units="m", min_spread_mm=1.0)
-        with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=fit
-        ) as mocked:
+        with patch("haptiq.estimation.classifier.fit_model", return_value=fit) as mocked:
             identify_sensor(points, {"SENSOR_A": self.model, "SENSOR_B": self.model}, config)
         for call in mocked.call_args_list:
             np.testing.assert_allclose(call.args[1], self.points)
@@ -111,9 +112,7 @@ class PressureDirectionTests(unittest.TestCase):
     def test_bounded_quick_and_detailed_wrappers_forward_pressure(self):
         for quick in (False, True):
             config = replace(IdentificationConfig(), quick_preview=quick)
-            with patch(
-                "digital_twin.sensor_identification.matching._fit_model", return_value={}
-            ) as fit:
+            with patch("haptiq.estimation.matching._fit_model", return_value={}) as fit:
                 result = fit_model(
                     self.model,
                     self.points,
@@ -141,9 +140,7 @@ class PressureDirectionTests(unittest.TestCase):
         ]
         config = replace(IdentificationConfig(), min_spread_mm=1.0)
         fit = dict(compatible=True, score=0.0, optimizer_success=True, consistent_refinements=2)
-        with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=fit
-        ) as mocked:
+        with patch("haptiq.estimation.classifier.fit_model", return_value=fit) as mocked:
             identify_sensor(points, {"SENSOR_A": self.model, "SENSOR_B": self.model}, config)
         for call in mocked.call_args_list:
             self.assertIn("boundary_xyz", call.kwargs)

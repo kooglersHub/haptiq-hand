@@ -1,0 +1,184 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>RH56DFTP · Hand Twin</title><style>
+:root{color-scheme:dark;--bg:#08111d;--panel:#0e1d2c;--line:#30475e;--muted:#a6bac9;--cyan:#4ed5ff;color:#e4f2ff;font-family:Inter,Segoe UI,Arial,sans-serif}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);overflow:hidden}#scene{height:100vh;width:100vw}
+#panel{position:fixed;z-index:50;top:12px;left:12px;width:min(417px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow-y:auto;overscroll-behavior:contain;padding:16px 18px;border:1px solid #35506c;background:#0c1c2deF;border-radius:15px;box-shadow:0 8px 32px #0009;backdrop-filter:blur(8px)}
+#panel::-webkit-scrollbar{width:7px}#panel::-webkit-scrollbar-thumb{background:#456078;border-radius:7px}
+.kicker{color:#65d7f8;text-transform:uppercase;letter-spacing:1px;font-weight:700;font-size:10px}h1{margin:5px 0 4px;font-size:20px}p{margin:6px 0 12px}.muted{color:var(--muted);font-size:11px;line-height:1.55}
+.switches{display:flex;gap:7px;align-items:center;margin:12px 0}.mode{border:1px solid #3a5671;background:#182d42;color:#c7d8e8;border-radius:8px;padding:8px 12px;cursor:pointer;font-size:12px;flex:1}.mode.active{border-color:#58bdef;color:white;background:#125075}button{font:inherit}.connection{display:flex;align-items:center;gap:7px;font-size:11px;color:#bbccdd}.dot{width:8px;height:8px;background:#66788a;border-radius:50%;display:inline-block}.dot.good{background:#48d3a4}.dot.bad{background:#eaba6c}
+.controls{display:grid;gap:7px;margin-top:12px}.channel{padding:10px 10px 8px;background:#112438;border:1px solid #25425c;border-radius:10px}.channel-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;gap:8px}.channel-name{font-size:12px;font-weight:650}.channel-info{font-size:10px;color:#9fbacc;font-variant-numeric:tabular-nums}.channel-main{display:flex;align-items:center;gap:8px}
+.channel input[type=range]{flex:1;min-width:40px;accent-color:#46c7f4;cursor:pointer}.channel input[type=number]{background:#1b354e;color:#edfaff;border:1px solid #45617a;border-radius:6px;padding:6px 5px;width:68px;font-size:13px;font-variant-numeric:tabular-nums;text-align:center}
+input:disabled{opacity:.53;cursor:not-allowed!important}.tactile{height:4px;background:#344658;border-radius:4px;margin-top:5px;overflow:hidden}.pressure-grid{display:grid;gap:2px;margin:9px 0}.pressure-cell{min-height:22px;padding:2px;font-size:9px;color:#fff;text-shadow:0 1px 2px #000;text-align:center}.tactile > span{display:block;height:100%;width:0%;background:linear-gradient(90deg,#36bcba,#edd063,#ff6873)}
+.metrics{display:flex;gap:7px;flex-wrap:wrap;margin:12px 0}.metric{flex:1;min-width:90px;background:#112639;border-radius:7px;padding:9px;font-size:11px}.metric b{display:block;font-size:14px;margin-top:4px}.label{font-size:11px;color:#a7c0d2}
+hr{border:none;border-top:1px solid #2e4961;margin:14px 0}details{border-top:1px solid #2d465c;padding-top:9px;margin-top:10px}summary{font-size:12px;cursor:pointer;font-weight:650;color:#cbe9f7}details .muted{margin-top:8px}
+.small-button{border:1px solid #3f607b;background:#1a3449;color:#c8e9fc;border-radius:7px;padding:7px 10px;cursor:pointer;font-size:11px}.small-button:hover{background:#285671}
+.endpoint{display:flex;gap:7px;margin-top:9px}.endpoint input{background:#112b40;border:1px solid #466881;color:#e5f2fc;border-radius:7px;padding:8px;min-width:0;flex:1;font-size:11px}
+#sensorEditor{margin-top:12px;padding:11px;border:1px solid #4b687a;border-radius:9px;background:#112638}#sensorEditor label{font-size:11px}#sensorEditor select{width:100%;background:#19364b;color:#ecf7ff;border:1px solid #537186;border-radius:5px;padding:6px;margin:4px 0 8px}#sensorTransform{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}.sensor-edit-value span{display:block;margin-bottom:3px;color:#b9d3e0}.sensor-edit-value input{width:100%;min-width:0;background:#0b1e2d;color:#f1f8ff;border:1px solid #4b697c;padding:6px 3px;border-radius:5px}.sensor-actions{display:flex;flex-wrap:wrap;gap:5px;margin:8px 0}#sensorEditor input[type=file]{width:100%;font-size:10px;margin:5px 0}#sensorEditorControls[hidden]{display:none}
+#toast{position:fixed;bottom:14px;right:14px;z-index:20;font-size:11px;background:#0b2033e8;border:1px solid #34546b;padding:8px 11px;border-radius:7px;color:#c1d6e4;max-width:280px}
+.plotly-graph-div{position:absolute!important;left:440px!important;width:calc(100vw - 440px)!important;height:100vh!important}
+@media(max-width:900px) and (min-width:621px){#panel{width:300px}.plotly-graph-div{left:324px!important;width:calc(100vw - 324px)!important}}
+@media(max-width:620px){#panel{height:42vh;max-height:42vh;top:0;left:0;width:100%;padding:12px;overflow:auto}.plotly-graph-div{left:0!important;top:42vh!important;width:100vw!important;height:58vh!important}#toast{bottom:8px;right:8px;max-width:200px}h1{font-size:17px}}
+#savedCaptures{padding:10px;margin:10px 0;border:1px solid #54758b;border-radius:9px;background:#0b2030}#savedCaptures h2{font-size:14px;margin:0 0 9px}#savedCaptures select{width:100%;padding:7px;margin:8px 0;background:#132f44;color:#e9f3fa;border:1px solid #54758b;border-radius:5px}#savedCaptures input[type=file]{width:100%;font-size:11px;margin-top:6px}#savedInfo{overflow-wrap:anywhere}button:disabled{opacity:.5;cursor:not-allowed}</style></head><body><aside id="panel">
+<div class="kicker">RH56DFTP · Left hand · 6 DOF</div><h1>Digital Hand Twin</h1>
+<p class="muted">Original STEP geometry · CAD-derived joint axes · visual kinematics without hardware commands</p>
+<div class="switches"><button id="modeManual" class="mode active">Manual</button><button id="modeLive" class="mode">Live from Python</button></div>
+<div class="connection"><span class="dot" id="statusDot"></span><span id="liveStatus">Manual preview · no hardware connection</span></div>
+<p id="dataSource" class="muted">Data source: no fresh hand data</p>
+<details><summary>Hand measurements</summary><p class="muted" id="actuatorPosition">Actuator positions: –</p><p class="muted">Angles: register scale 0–1000. Position: six actuator readings, not XYZ coordinates.</p><pre id="fieldMeans" style="font-size:10px;white-space:pre-wrap">Region means: –</pre></details>
+<p class="muted">Manual: sliders move the virtual hand. Live: motion follows fresh Python data only.</p>
+<div style="display:flex;gap:7px"><button class="small-button" id="quickOpen">Open</button><button class="small-button" id="quickClose">Close</button><button class="small-button" id="animateDemo">Motion demo</button></div><p class="muted" id="renderStats"></p>
+<section id="sensorEditor"><label><input id="sensorEditMode" type="checkbox"> <b>Edit sensors</b></label>
+<div id="sensorEditorControls" hidden><p class="muted">Click a region or select one below. Coordinates are in mm in the open STEP pose. Editing pauses live/demo mode; joint sliders remain available.</p>
+<label for="sensorField">Sensor region</label><select id="sensorField" aria-label="Sensor region"></select>
+<p id="sensorFieldInfo" class="muted"></p><label for="sensorParent">Parent segment</label><select id="sensorParent" aria-label="Parent segment"></select>
+<div id="sensorTransform"></div><label><input id="sensorSnap" type="checkbox" checked> Snap to parent surface</label>
+<p class="muted">Snapping makes the grid follow the surface. Adjust its normal offset with “Surface offset”. Rotations use the local region axes.</p>
+<label><input id="sensorXray" type="checkbox"> Show hidden sensors (X-ray)</label><br><label><input id="sensorBorders" type="checkbox" checked> Show region borders</label>
+<p id="sensorProjectionInfo" class="muted"></p><div class="sensor-actions"><button id="sensorFocus" class="small-button">Focus region</button><button id="sensorWholeView" class="small-button">Whole hand</button><button id="sensorUndo" class="small-button">Undo</button><button id="sensorResetField" class="small-button">Reset region</button><button id="sensorResetAll" class="small-button">Reset all</button></div>
+<div class="sensor-actions"><button id="sensorSave" class="small-button">Save locally</button><button id="sensorExport" class="small-button">Export layout JSON</button></div><label>Import layout JSON<input id="sensorImport" type="file" accept=".json,application/json"></label>
+<p id="sensorEditorMessage" class="muted">Changes are virtual. Active areas are approximate, not a certified electrode map.</p></div></section>
+<div class="controls" id="controls"></div>
+<p class="muted" id="palmInfo" style="margin:10px 0 0">Palm · Tactile max: –</p>
+
+<details open><summary>Live pressure · GUI colors</summary>
+<p class="muted">Calibrated signal: max(0, raw − GUI offset), in sensor counts.</p>
+<p class="muted"><span style="color:#00aa00">■ &lt;800</span> · <span style="color:#cccc00">■ 800–1999</span> · <span style="color:#ff8800">■ 2000–3199</span> · <span style="color:#ff0000">■ ≥3200</span> · Gray: missing/stale</p>
+<select id="pressureRegion" aria-label="Live pressure region"></select>
+<div id="pressureGrid" class="pressure-grid" aria-label="Calibrated pressure cells"></div>
+<p id="pressureSummary" class="muted"></p><p id="pressureCell" class="muted">Select a cell on the hand or grid to inspect its value.</p>
+</details>
+<details open><summary>Sensor surfaces & contact shape (experimental)</summary>
+<label class="label"><input id="showSensors" type="checkbox" checked> Show sensing cells on CAD</label>
+<p class="muted">17 regions / 1,062 taxels from the manual. Grids on CAD surfaces; palm ordered by column, bottom to top. Palm starts at 40 × 25 mm. GUI pressure colors show calibrated readings. Gray means missing or stale data; manual preview uses region colors. Active areas remain approximate.</p>
+<label class="label">Contact threshold (calibrated counts) <input id="contactThreshold" type="number" min="0" max="4095" value="200"></label>
+<p class="muted" id="contactInfo">No fresh sensor matrices</p>
+<button class="small-button" id="exportContacts">Export contact points as JSON</button></details>
+<div class="metrics"><div class="metric"><span class="label">Index finger α (model)</span><b id="indexAlpha">176°</b></div><div class="metric"><span class="label">Thumb bending (model)</span><b id="thumbBend">−13°</b></div><div class="metric"><span class="label">Thumb rotation (model)</span><b id="thumbRot">165°</b></div></div>
+<div style="display:flex;gap:7px"><button class="small-button" id="openAll">Open all</button><button class="small-button" id="closeAll">Close all</button><button class="small-button" id="resetView">Reset view</button></div>
+<details><summary>Live connection and sensor data</summary><p class="muted">Start <code>python bridge_server.py</code>. Your Python application sends JSON to <code>POST /api/state</code>. The viewer polls <code>GET /api/state</code>. Communication is local; this viewer does not control the physical hand.</p>
+<div class="endpoint"><input id="bridgeUrl" aria-label="Bridge address" value="http://127.0.0.1:18765"/><button class="small-button" id="checkBridge">Connect</button></div><p class="muted" id="lastPacket">No data received yet.</p>
+<p class="muted">Data source for the 3D model:</p><select id="liveField" style="width:100%;background:#163047;color:#e4f3fc;border:1px solid #45617a;padding:8px;border-radius:8px"><option value="actual">Prefer actual readings (ANGLE_ACT)</option><option value="set">Prefer target readings (ANGLE_SET)</option></select>
+<pre id="packetSample" style="white-space:pre-wrap;overflow-wrap:anywhere;color:#d6eaf8;background:#071723;border:1px solid #294257;font-size:10px;border-radius:7px;padding:10px">{ "angles_set": [1000,1000,1000,1000,1000,1000], "angles_act": [1000,1000,1000,1000,1000,1000], "force_act": [0,0,0,0,0,0], "tactile": { "index": {"max":0}, "palm":{"max":0} } }</pre>
+</details>
+<details><summary>Model assumptions & calibration</summary><p class="muted">Each long finger moves around two joint axes derived from the STEP geometry. The bending distribution is uncalibrated. The manual defines overall angle α limits of 20°–176°, but no individual joint curve. Intermediate values are assumed linear. Thumb axis candidates come from CAD; limits of −13°–70° (bending) and 90°–165° (rotation) come from the manual. Motion directions and motor-value mappings are assumptions.</p>
+<label class="label" for="ratio">PIP / MCP ratio for four fingers: <b id="ratioDisplay">0.85</b></label><input style="width:100%;accent-color:#e0ae6d" type="range" id="ratio" min="0.5" max="1.1" step="0.01" value="0.85"/><p class="muted">CAD surfaces at part boundaries are assigned by spatial segmentation. Small gaps or overlaps may be visible. This viewer is not a validated mechanical simulator.</p>
+</details></aside><div id="toast">Drag: rotate 3D · Scroll: zoom · Sensor regions based on the manual</div><script>function pressureColor(value){return value<800?'#00aa00':value<2000?'#cccc00':value<3200?'#ff8800':'#ff0000'}
+const HandRenderer=(()=>{
+ 'use strict';
+ const multiply=(a,b)=>{const out=new Float32Array(16);for(let c=0;c<4;c++)for(let r=0;r<4;r++)for(let k=0;k<4;k++)out[c*4+r]+=a[k*4+r]*b[c*4+k];return out};
+ const normalize=v=>{const n=Math.hypot(...v)||1;return v.map(x=>x/n)};
+ const cross=(a,b)=>[a[1]*b[2]-a[2]*b[1],a[2]*b[0]-a[0]*b[2],a[0]*b[1]-a[1]*b[0]];
+ const dot=(a,b)=>a.reduce((n,x,i)=>n+x*b[i],0);
+ const color=c=>{if(typeof c!=='string')return [.65,.72,.8];return [1,3,5].map(i=>parseInt(c.slice(i,i+2),16)/255)};
+ const heat=value=>color(pressureColor(value));
+ function program(gl){
+  const vs=`#version 300 es
+  precision highp float;
+  in vec3 position;in vec3 vertexColor;in vec3 normal;uniform mat4 vp;uniform mat3 normalMatrix;uniform float pointSize;
+  out vec3 world;out vec3 tint;out vec3 smoothNormal;
+  void main(){world=position;tint=vertexColor;smoothNormal=normalMatrix*normal;gl_Position=vp*vec4(position,1.);gl_PointSize=pointSize;}`;
+  const fs=`#version 300 es
+  precision highp float;
+  in vec3 world;in vec3 tint;in vec3 smoothNormal;uniform int kind;out vec4 result;
+  void main(){if(kind==1 && length(gl_PointCoord-vec2(.5))>.5)discard;
+    float light=1.;if(kind==0){vec3 n=normalize(smoothNormal);light=.60+.40*abs(dot(n,normalize(vec3(.4,1.,.65))));}
+    result=vec4(tint*light,1.);}`;
+  const shaders=[gl.VERTEX_SHADER,gl.FRAGMENT_SHADER].map((type,i)=>{const s=gl.createShader(type);gl.shaderSource(s,[vs,fs][i]);gl.compileShader(s);if(!gl.getShaderParameter(s,gl.COMPILE_STATUS))throw Error(gl.getShaderInfoLog(s));return s});
+  const p=gl.createProgram();for(const s of shaders)gl.attachShader(p,s);gl.linkProgram(p);
+  if(!gl.getProgramParameter(p,gl.LINK_STATUS))throw Error(gl.getProgramInfoLog(p));return p;
+ }
+ async function create(id,data){
+  const plot=document.getElementById(id);plot.data=data;
+  const canvas=document.createElement('canvas');canvas.style.cssText='width:100%;height:100%;display:block;touch-action:none';
+  canvas.setAttribute('aria-label','3D hand: drag to rotate, mouse wheel to zoom');plot.appendChild(canvas);
+  const gl=canvas.getContext('webgl2',{antialias:false,alpha:false,preserveDrawingBuffer:false,powerPreference:'high-performance'});
+  if(!gl){plot.textContent='WebGL2 is unavailable. Enable hardware acceleration in your browser.';throw Error('WebGL2 unavailable')}
+  const p=program(gl);gl.useProgram(p);
+  const locations={position:gl.getAttribLocation(p,'position'),color:gl.getAttribLocation(p,'vertexColor'),normal:gl.getAttribLocation(p,'normal'),
+   normalMatrix:gl.getUniformLocation(p,'normalMatrix'),vp:gl.getUniformLocation(p,'vp'),kind:gl.getUniformLocation(p,'kind'),size:gl.getUniformLocation(p,'pointSize')};
+  gl.enable(gl.DEPTH_TEST);gl.depthFunc(gl.LEQUAL);gl.clearColor(16/255,20/255,25/255,1);
+  let yaw=Math.atan2(.85,2.2),pitch=.32,zoom=1,dirty=true,frame=false,lost=false;
+  const center=[0,15,130],resources=[],identityNormal=new Float32Array([1,0,0,0,1,0,0,0,1]);
+  let viewProjection=null,pickHandler=null,cameraRight=null,cameraUp=null;
+  function upload(trace,index){
+   let r=resources[index];if(!r){r=resources[index]={vao:gl.createVertexArray(),positions:gl.createBuffer(),colors:gl.createBuffer(),normals:gl.createBuffer(),indices:gl.createBuffer()};}
+   const n=trace.x.length;const vertices=r.vertexArray?.length===n*3?r.vertexArray:(r.vertexArray=new Float32Array(n*3));
+   const colorKey=trace.type==='mesh3d'?trace.color:null,refreshColors=trace.type!=='mesh3d'||r.colorKey!==colorKey||r.colorCount!==n;
+   const colors=refreshColors?new Float32Array(n*3):null;
+   const base=color(trace.color||(trace.line?.color)||'#9cacc0');
+   for(let j=0;j<n;j++){const o=j*3;vertices[o]=trace.x[j];vertices[o+1]=trace.y[j];vertices[o+2]=trace.z[j];if(colors){const c=trace.vertex_rgb?.[j]||trace.marker?.rgb?.[j]||(trace.marker?heat(trace.marker.color?.[j]||0):base);colors[o]=c[0];colors[o+1]=c[1];colors[o+2]=c[2]}}
+   gl.bindVertexArray(r.vao);gl.bindBuffer(gl.ARRAY_BUFFER,r.positions);gl.bufferData(gl.ARRAY_BUFFER,vertices,gl.DYNAMIC_DRAW);
+   gl.enableVertexAttribArray(locations.position);gl.vertexAttribPointer(locations.position,3,gl.FLOAT,false,0,0);
+   gl.bindBuffer(gl.ARRAY_BUFFER,r.colors);if(refreshColors){gl.bufferData(gl.ARRAY_BUFFER,colors,gl.DYNAMIC_DRAW);r.colorKey=colorKey;r.colorCount=n;}
+   gl.enableVertexAttribArray(locations.color);gl.vertexAttribPointer(locations.color,3,gl.FLOAT,false,0,0);
+   if(trace.type==='mesh3d'){
+    // Weld CAD face seams for continuous lighting; reuse the topology while posing.
+    const frame=()=>{const [a,b,c]=r.frameVertices,p=j=>[trace.x[j],trace.y[j],trace.z[j]],pa=p(a),u=normalize(p(b).map((v,k)=>v-pa[k])),w=normalize(cross(u,p(c).map((v,k)=>v-pa[k])));return [u,cross(w,u),w]};
+    const normals=new Float32Array(n*3);
+    if(!r.localNormals){
+    const keys=new Map();r.weld=new Uint32Array(n);for(let j=0;j<n;j++){const key=[trace.x[j],trace.y[j],trace.z[j]].map(v=>Math.round(v*10000)).join(',');if(!keys.has(key))keys.set(key,keys.size);r.weld[j]=keys.get(key)}r.weldCount=keys.size;
+    let area=0;for(let t=0;t<trace.i.length;t++){const a=trace.i[t],b=trace.j[t],c=trace.k[t],ux=trace.x[b]-trace.x[a],uy=trace.y[b]-trace.y[a],uz=trace.z[b]-trace.z[a],vx=trace.x[c]-trace.x[a],vy=trace.y[c]-trace.y[a],vz=trace.z[c]-trace.z[a],nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx,size=nx*nx+ny*ny+nz*nz;if(size>area){area=size;r.frameVertices=[a,b,c]}}
+    const sums=new Float32Array(r.weldCount*3);
+    for(let t=0;t<trace.i.length;t++){const a=trace.i[t],b=trace.j[t],c=trace.k[t];const ux=trace.x[b]-trace.x[a],uy=trace.y[b]-trace.y[a],uz=trace.z[b]-trace.z[a],vx=trace.x[c]-trace.x[a],vy=trace.y[c]-trace.y[a],vz=trace.z[c]-trace.z[a];const nx=uy*vz-uz*vy,ny=uz*vx-ux*vz,nz=ux*vy-uy*vx;for(const j of [a,b,c]){const o=r.weld[j]*3;sums[o]+=nx;sums[o+1]+=ny;sums[o+2]+=nz;}}
+    for(let j=0;j<n;j++){const o=r.weld[j]*3,d=Math.hypot(sums[o],sums[o+1],sums[o+2])||1;normals[j*3]=sums[o]/d;normals[j*3+1]=sums[o+1]/d;normals[j*3+2]=sums[o+2]/d;}
+    const basis=frame();r.localNormals=new Float32Array(n*3);for(let j=0;j<n;j++){const normal=normals.subarray(j*3,j*3+3);for(let k=0;k<3;k++)r.localNormals[j*3+k]=dot(normal,basis[k])}
+    }
+    r.normalMatrix=new Float32Array(frame().flat());
+    gl.bindBuffer(gl.ARRAY_BUFFER,r.normals);if(!r.normalsUploaded){gl.bufferData(gl.ARRAY_BUFFER,r.localNormals,gl.STATIC_DRAW);r.normalsUploaded=true;}gl.enableVertexAttribArray(locations.normal);gl.vertexAttribPointer(locations.normal,3,gl.FLOAT,false,0,0);
+    if(!r.count){const elements=new Uint32Array(trace.i.length*3);for(let j=0;j<trace.i.length;j++)elements.set([trace.i[j],trace.j[j],trace.k[j]],j*3);
+     gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER,r.indices);gl.bufferData(gl.ELEMENT_ARRAY_BUFFER,elements,gl.STATIC_DRAW);r.count=elements.length;}
+    r.kind=0;
+   }else{r.count=n;r.kind=trace.mode==='lines'?2:1;}
+  }
+  data.forEach(upload);
+  function draw(){
+   frame=false;if(lost||!dirty)return;dirty=false;
+   const dpr=Math.min(2,window.devicePixelRatio||1),width=Math.max(1,Math.round(canvas.clientWidth*dpr)),height=Math.max(1,Math.round(canvas.clientHeight*dpr));
+   if(canvas.width!==width||canvas.height!==height){canvas.width=width;canvas.height=height;}
+   gl.viewport(0,0,width,height);gl.clear(gl.COLOR_BUFFER_BIT|gl.DEPTH_BUFFER_BIT);gl.useProgram(p);
+   const aspect=width/height,f=1/Math.tan(Math.PI/7.5),distance=285*zoom*Math.max(1,1/aspect);
+   const eye=[Math.sin(yaw)*Math.cos(pitch)*distance,Math.cos(yaw)*Math.cos(pitch)*distance,Math.sin(pitch)*distance].map((x,i)=>x+center[i]);
+   const z=normalize(eye.map((x,i)=>x-center[i])),x=normalize(cross([0,0,1],z)),y=cross(z,x);
+   cameraRight=x;cameraUp=y;
+   const view=new Float32Array([x[0],y[0],z[0],0,x[1],y[1],z[1],0,x[2],y[2],z[2],0,-dot(x,eye),-dot(y,eye),-dot(z,eye),1]);
+   const near=1,far=3000,projection=new Float32Array([f/aspect,0,0,0,0,f,0,0,0,0,(far+near)/(near-far),-1,0,0,2*far*near/(near-far),0]);
+   viewProjection=multiply(projection,view);gl.uniformMatrix4fv(locations.vp,false,viewProjection);
+   resources.forEach((r,i)=>{if(data[i].visible===false)return;if(data[i].xray)gl.disable(gl.DEPTH_TEST);else gl.enable(gl.DEPTH_TEST);gl.bindVertexArray(r.vao);gl.uniformMatrix3fv(locations.normalMatrix,false,r.normalMatrix||identityNormal);gl.uniform1i(locations.kind,r.kind);gl.uniform1f(locations.size,r.kind===1?(data[i].marker?.size||3.4)*dpr:1);
+    if(r.kind===0)gl.drawElements(gl.TRIANGLES,r.count,gl.UNSIGNED_INT,0);else gl.drawArrays(r.kind===1?gl.POINTS:gl.LINES,0,r.count);});
+  }
+  function request(){dirty=true;if(!frame){frame=true;requestAnimationFrame(draw)}}
+  let dragging=null,pointerStart=null;
+  function pick(clientX,clientY){
+   if(!pickHandler||!viewProjection)return;const rect=canvas.getBoundingClientRect(),target=[clientX-rect.left,clientY-rect.top],m=viewProjection;let best=null;
+   data.forEach((trace,id)=>{if(!trace.pickable||trace.visible===false)return;for(let i=0;i<trace.x.length;i++){
+    const p=[trace.x[i],trace.y[i],trace.z[i],1],clip=[0,1,2,3].map(r=>p.reduce((sum,v,k)=>sum+m[k*4+r]*v,0));if(clip[3]<=0)continue;
+    const z=clip[2]/clip[3];if(z< -1||z>1)continue;
+    const x=(clip[0]/clip[3]+1)*rect.width/2,y=(1-clip[1]/clip[3])*rect.height/2,d=(x-target[0])**2+(y-target[1])**2;
+    if(d<100&&(!best||d<best.d-1||(Math.abs(d-best.d)<=1&&z<best.z)))best={id,index:i,d,z};
+   }});if(best)pickHandler(best.id,best.index);
+  }
+  canvas.addEventListener('pointerdown',e=>{dragging=[e.clientX,e.clientY];pointerStart=dragging.slice();canvas.setPointerCapture(e.pointerId)});
+  canvas.addEventListener('pointermove',e=>{if(!dragging)return;yaw-=(e.clientX-dragging[0])*.009;pitch=Math.max(-1.45,Math.min(1.45,pitch+(e.clientY-dragging[1])*.009));dragging=[e.clientX,e.clientY];request()});
+  canvas.addEventListener('pointerup',e=>{if(pointerStart&&Math.hypot(e.clientX-pointerStart[0],e.clientY-pointerStart[1])<5)pick(e.clientX,e.clientY);dragging=null;pointerStart=null});canvas.addEventListener('pointercancel',()=>{dragging=null;pointerStart=null});
+  canvas.addEventListener('wheel',e=>{e.preventDefault();zoom=Math.max(.35,Math.min(4,zoom*Math.exp(e.deltaY*.001)));request()},{passive:false});
+  canvas.addEventListener('webglcontextlost',e=>{e.preventDefault();lost=true;document.getElementById('renderStats').textContent='Graphics context lost. Reload the viewer.'});
+  new ResizeObserver(request).observe(plot);
+  plot._renderer={upload,draw,request,setPickHandler(handler){pickHandler=handler},
+   screenDelta(point,dx,dy){if(!viewProjection||!cameraRight)return [0,0,0];const m=viewProjection,depth=m[3]*point[0]+m[7]*point[1]+m[11]*point[2]+m[15],scale=2*Math.max(1,depth)/(Math.max(1,canvas.clientHeight)/Math.tan(Math.PI/7.5));return cameraRight.map((v,i)=>scale*(v*dx-cameraUp[i]*dy))},
+   focus(point,normal,distance){center.splice(0,3,...point);const n=normalize(normal);yaw=Math.atan2(n[0],n[1]);pitch=Math.asin(Math.max(-.98,Math.min(.98,n[2])));const aspect=canvas.clientWidth/canvas.clientHeight;zoom=Math.max(.06,Math.min(4,distance/(285*Math.max(1,1/aspect))));request()},
+   reset(){center.splice(0,3,0,15,130);yaw=Math.atan2(.85,2.2);pitch=.32;zoom=1;request()}};
+  draw();return plot;
+ }
+ async function restyle(plot,values,indices){
+  indices.forEach((id,k)=>{const t=plot.data[id];for(const [key,list] of Object.entries(values)){
+   const value=list[k];if(value===undefined)continue;
+   if(key.startsWith('marker.')){t.marker??={};t.marker[key.slice(7)]=value;}else t[key]=value;
+  }if(Object.keys(values).some(key=>['x','y','z','color','vertex_rgb','type','mode','i','j','k'].includes(key)||key.startsWith('marker.')||key==='marker'))plot._renderer.upload(t,id);});
+  plot._renderer.request();
+ }
+ async function relayout(plot){plot._renderer.reset()}
+ return {create,restyle,relayout};
+})();
+
+</script>
+{{TOOLKIT_CONTROLS}}
+{{JOINT_EXTENSION}}<script src="sensor_identification/history.js"></script><script src="sensor_identification/measurements.js"></script><script src="frontend/api_client.js"></script><script src="frontend/estimate_feedback.js"></script><script src="frontend/layout.js"></script><script src="frontend/application.js"></script></body></html>

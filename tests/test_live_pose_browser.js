@@ -4,10 +4,7 @@ const fs = require('node:fs'),
   { pathToFileURL } = require('node:url');
 const { chromium } = require('playwright');
 const revision = fs
-  .readFileSync(
-    path.join(__dirname, '../digital_twin/sensor_identification/web_service.py'),
-    'utf8',
-  )
+  .readFileSync(path.join(__dirname, '../src/haptiq/contracts.py'), 'utf8')
   .match(/ESTIMATOR_REVISION\s*=\s*['"]([^'"]+)['"]/)[1];
 (async () => {
   const browser = await chromium.launch({
@@ -77,7 +74,7 @@ const revision = fs
       return route.fulfill({ json: state() });
     });
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () => document.querySelector('#onePageApp') && window.HandEstimate,

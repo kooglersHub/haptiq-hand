@@ -9,15 +9,15 @@ from pathlib import Path
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification import (
+from haptiq.estimation import (
     IdentificationConfig,
     identify_sensor,
     load_candidates,
 )
-from digital_twin.sensor_identification.adapter import identify_frame, normalize_frame
-from digital_twin.sensor_identification.demo import synthetic_points, write_viewer
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.adapter import identify_frame, normalize_frame
+from haptiq.estimation.demo import synthetic_points, write_viewer
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import fit_model
 
 
 class IdentificationTests(unittest.TestCase):
@@ -151,9 +151,7 @@ class IdentificationTests(unittest.TestCase):
             dict(compatible=True, score=0.1, optimizer_success=True, consistent_refinements=4),
             dict(compatible=False, score=4.0, optimizer_success=True, consistent_refinements=4),
         ]
-        with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", side_effect=fits
-        ) as fitter:
+        with patch("haptiq.estimation.classifier.fit_model", side_effect=fits) as fitter:
             result = identify_sensor(points, self.models, replace(self.config, calibrated=False))
             self.assertEqual(result["reason"], "calibration_unverified")
             self.assertEqual(result["certified_exclusions"], 0)

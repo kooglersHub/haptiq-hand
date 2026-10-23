@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "haptiq"
 version = "0.1.0"
-description = "Control interface and tactile intelligence for RH56DFTP dexterous hand"
+description = "Passive RH56DFTP telemetry, tactile visualization and CAD estimation"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
@@ -19,13 +19,19 @@ dependencies = [
 sensor-identification = ["scipy>=1.15", "trimesh>=4.6", "rtree>=1.3", "plotly>=6"]
 
 [project.scripts]
-haptiq = "main:main"
+haptiq = "haptiq.main:cli"
+haptiq-viewer = "haptiq.server.launcher:main"
+haptiq-estimate = "haptiq.estimation.__main__:main"
+haptiq-build-viewer = "haptiq.digital_twin.rebuild_joint_viewer:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+include = ["haptiq*"]
+namespaces = false
 
-[tool.setuptools]
-py-modules = ["main"]
+[tool.setuptools.package-data]
+"haptiq.assets" = ["models/*.stl", "models/*.json"]
+"haptiq.digital_twin" = ["*.html", "*.js", "*.json", "*.css", "frontend/*", "templates/*", "assets/*", "profile_sources/**/*.urdf", "sensor_identification/*.js", "sensor_identification/*.cjs", "sensor_identification/README.md"]
 
 
 [dependency-groups]

@@ -4,13 +4,11 @@ import hashlib
 import json
 import re
 import struct
-import sys
 import unittest
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "digital_twin"))
-from build_sensor_objects import build
+from haptiq.digital_twin.build_sensor_objects import build
 
 
 class SensorObjectSourceTests(unittest.TestCase):
@@ -51,7 +49,7 @@ class SensorObjectSourceTests(unittest.TestCase):
                 )
 
     def test_viewer_contains_matching_sensor_geometry(self):
-        html = (ROOT / "digital_twin/hand_twin_6dof.html").read_text(encoding="utf-8")
+        html = (ROOT / "src/haptiq/digital_twin/hand_twin_6dof.html").read_text(encoding="utf-8")
         embedded = json.loads(
             re.search(
                 r'<script id="jointProfileData" type="application/json">(.*?)</script>', html, re.S

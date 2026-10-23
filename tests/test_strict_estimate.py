@@ -1,27 +1,28 @@
 import json
 import re
-import sys
 import unittest
 from dataclasses import replace
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.limits import triangle_patch_depth, triangle_penetrations
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.limits import (
+    triangle_patch_depth,
+    triangle_penetrations,
+)
+from haptiq.estimation.matching import fit_model
 
 
 class StrictEstimateTests(unittest.TestCase):
     def test_display_mesh_origin_matches_source_stl_after_compensation(self):
         root = Path(__file__).resolve().parents[1]
-        html = (root / "digital_twin/hand_twin_6dof.html").read_text(encoding="utf-8")
+        html = (root / "src/haptiq/digital_twin/hand_twin_6dof.html").read_text(encoding="utf-8")
         data = json.loads(
             re.search(
                 r'<script id="jointProfileData" type="application/json">(.*?)</script>', html
@@ -89,9 +90,12 @@ class StrictEstimateTests(unittest.TestCase):
             return SimpleNamespace(x=x0, success=True, nfev=1)
 
         with (
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=freeze),
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching.least_squares",
+                side_effect=freeze,
+            ),
+            patch(
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
         ):

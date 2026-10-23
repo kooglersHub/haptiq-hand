@@ -1,15 +1,12 @@
-import sys
 import unittest
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.visible_surface import (
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.visible_surface import (
     _balanced_indices,
     _weights,
     first_surface,

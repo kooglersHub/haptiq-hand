@@ -3,11 +3,15 @@ const assert = require('node:assert/strict'),
   path = require('node:path'),
   vm = require('node:vm');
 const source = fs.readFileSync(
-  path.join(__dirname, '../digital_twin/sensor_identification/simulation.js'),
+  path.join(__dirname, '../src/haptiq/digital_twin/frontend/estimate_feedback.js'),
   'utf8',
 );
-const context = { module: { exports: {} }, Date };
-vm.runInNewContext(source.split('/* One page:')[0], context);
+const context = {
+  module: { exports: {} },
+  Date,
+  HaptiqCandidates: require('../src/haptiq/digital_twin/frontend/candidates.js'),
+};
+vm.runInNewContext(source, context);
 const transform = [
   [1, 0, 0, 0],
   [0, 1, 0, 0],
@@ -44,17 +48,19 @@ const partial = context.module.exports.render({
 });
 assert.ok(partial.includes('Partial placement'));
 assert.ok(partial.includes('Poorly matched areas: thumb, palm'));
-const backend = fs.readFileSync(
-  path.join(__dirname, '../digital_twin/sensor_identification/web_service.py'),
+const appSource = fs.readFileSync(
+  path.join(__dirname, '../src/haptiq/digital_twin/frontend/application.js'),
   'utf8',
 );
-const revision = backend.match(/ESTIMATOR_REVISION\s*=\s*['"]([^'"]+)['"]/)[1];
-assert.deepEqual(
-  [...source.matchAll(/(?:state|backend)\.estimator_revision\s*!==\s*['"]([^'"]+)['"]/g)].map(
-    (x) => x[1],
-  ),
-  [revision, revision],
+assert.equal(
+  [
+    ...appSource.matchAll(
+      /(?:state|backend)\.estimator_revision\s*!==\s*appConfig\.estimator_revision/g,
+    ),
+  ].length,
+  2,
 );
+assert(!appSource.includes('small_sensor_axial_start_v'));
 console.log(
   'PASS provisional placement, explicit coverage, rejected alternative and protocol revision',
 );

@@ -1,10 +1,7 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs');
 const estimatorRevision = fs
-  .readFileSync(
-    require('node:path').join(__dirname, '../digital_twin/sensor_identification/web_service.py'),
-    'utf8',
-  )
+  .readFileSync(require('node:path').join(__dirname, '../src/haptiq/contracts.py'), 'utf8')
   .match(/ESTIMATOR_REVISION\s*=\s*['"]([^'"]+)['"]/)[1];
 const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
 (async () => {

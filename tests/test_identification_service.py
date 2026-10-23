@@ -1,7 +1,6 @@
 """Local HTTP integration with controlled workers; CAD fitting has separate tests."""
 
 import json
-import sys
 import tempfile
 import threading
 import time
@@ -11,15 +10,14 @@ from unittest.mock import patch
 from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "digital_twin"))
-import bridge_server as bridge
-from sensor_identification.web_service import IdentificationService
+from haptiq.estimation.web_service import IdentificationService
+from haptiq.server import http as bridge
 
 
 class ServiceTests(unittest.TestCase):
     def setUp(self):
         self.temp = tempfile.TemporaryDirectory()
-        self.server = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        self.server = bridge.create_server(port=0)
         self.service = self.server.sensor_identification = IdentificationService(self.temp.name)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.base = f"http://127.0.0.1:{self.server.server_port}"
@@ -56,7 +54,7 @@ class ServiceTests(unittest.TestCase):
     def test_routes_and_invalid_requests_preserve_existing_state(self):
         self.assertEqual(json.loads(self.request("/api/identification")[1])["status"], "idle")
         self.assertEqual(self.request("/identification/report")[0], 404)
-        self.assertIn(b"Estimate", self.request("/sensor_identification/simulation.js")[1])
+        self.assertIn(b"Estimate", self.request("/frontend/application.js")[1])
         self.assertEqual(self.request("/sensor_identification/measurements.js")[0], 200)
         self.assertEqual(self.request("/sensor_identification/history.js")[0], 200)
         self.assertEqual(self.request("/sensor_identification/runs.js")[0], 200)
@@ -88,12 +86,21 @@ class ServiceTests(unittest.TestCase):
 
         with (
             patch(
-                "sensor_identification.web_service.load_candidates",
+                "haptiq.estimation.web_service.load_candidates",
                 return_value={"SENSOR_B": object()},
             ),
-            patch("sensor_identification.web_service.synthetic_points", return_value=[]),
-            patch("sensor_identification.web_service.identify_sensor", side_effect=identify),
-            patch("sensor_identification.web_service.write_viewer", side_effect=viewer),
+            patch(
+                "haptiq.estimation.web_service.synthetic_points",
+                return_value=[],
+            ),
+            patch(
+                "haptiq.estimation.web_service.identify_sensor",
+                side_effect=identify,
+            ),
+            patch(
+                "haptiq.estimation.web_service.write_viewer",
+                side_effect=viewer,
+            ),
         ):
             self.assertEqual(self.request("/api/identification", {"mode": "SENSOR_B"})[0], 202)
             self.assertTrue(started.wait(1))
@@ -131,9 +138,13 @@ class ServiceTests(unittest.TestCase):
 
         with (
             patch(
-                "sensor_identification.web_service.identify_frame", return_value=result
+                "haptiq.estimation.web_service.identify_frame",
+                return_value=result,
             ) as identify,
-            patch("sensor_identification.web_service.write_viewer", side_effect=viewer),
+            patch(
+                "haptiq.estimation.web_service.write_viewer",
+                side_effect=viewer,
+            ),
         ):
             self.assertEqual(
                 self.request("/api/identification", {"mode": "current", "frame": frame})[0], 202
@@ -175,7 +186,7 @@ class ServiceTests(unittest.TestCase):
             self.assertEqual(kwargs["boundary_points"], [boundary])
             Path(path).write_text("<html>swept constraints</html>", encoding="utf-8")
 
-        with patch("sensor_identification.web_service.write_viewer", side_effect=viewer):
+        with patch("haptiq.estimation.web_service.write_viewer", side_effect=viewer):
             self.assertEqual(
                 self.request("/api/identification", {"mode": "current", "frame": frame})[0], 202
             )
@@ -192,10 +203,11 @@ class ServiceTests(unittest.TestCase):
         self.service._models = {}
         with (
             patch(
-                "sensor_identification.web_service.identify_frame", return_value=result
+                "haptiq.estimation.web_service.identify_frame",
+                return_value=result,
             ) as identify,
             patch(
-                "sensor_identification.web_service.write_viewer",
+                "haptiq.estimation.web_service.write_viewer",
                 side_effect=RuntimeError("test failure"),
             ),
         ):

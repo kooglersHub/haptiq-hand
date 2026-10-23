@@ -10,12 +10,9 @@ from urllib.request import ProxyHandler, build_opener
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "digital_twin"))
-import bridge_server as bridge
-
-import main as app_main
-from logic.twin_publisher import REGIONS, TwinPublisher, robot_snapshot, twin_payload
+from haptiq import main as app_main
+from haptiq.server import http as bridge
+from haptiq.telemetry.publisher import REGIONS, TwinPublisher, robot_snapshot, twin_payload
 
 
 class TwinTests(unittest.TestCase):
@@ -66,7 +63,7 @@ class TwinTests(unittest.TestCase):
         self.assertIsNone(twin_payload(robot_snapshot(robot, results))["angles_act"])
 
     def test_http_pipeline_and_both_viewers(self):
-        server = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        server = bridge.create_server(port=0)
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()
         base_url = f"http://127.0.0.1:{server.server_port}"
@@ -94,7 +91,7 @@ class TwinTests(unittest.TestCase):
             server.server_close()
 
     def test_unreachable_bridge_does_not_raise(self):
-        server = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        server = bridge.create_server(port=0)
         port = server.server_port
         server.server_close()
         publisher = TwinPublisher(f"http://127.0.0.1:{port}/api/state")

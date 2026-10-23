@@ -4,8 +4,12 @@ import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.axial_search import axial_pose, roll_angles, screen_rolls
-from digital_twin.sensor_identification.geometry import CandidateModel
+from haptiq.estimation.axial_search import (
+    axial_pose,
+    roll_angles,
+    screen_rolls,
+)
+from haptiq.estimation.geometry import CandidateModel
 
 
 class AxialSearchTests(unittest.TestCase):

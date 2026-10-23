@@ -20,7 +20,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       }),
     );
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () =>
@@ -28,7 +28,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       null,
       { timeout: 60000 },
     );
-    await page.click('#dataManual');
+    await page.click('#dataLive');
+    await page.uncheck('#followTelemetry');
+    await page.evaluate(() => window.setHandAngles(Array(6).fill(1000)));
     const initial = await page.evaluate(() => ({
       frame: getIdentificationFrame(),
       trace: document
@@ -78,12 +80,15 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       c.checked = true;
       c.onchange();
     });
-    await page.click('#dataManual');
+    await page.click('#dataLive');
+    await page.uncheck('#followTelemetry');
+    await page.evaluate(() => window.setHandAngles(Array(6).fill(1000)));
     await page.evaluate(() => ProfileTwin.manual(Array(6).fill(1000)));
     await page.waitForTimeout(300);
-    fs.mkdirSync(path.join(__dirname, '../verification'), { recursive: true });
+    const artifactDirectory = process.env.HAND_VIEWER_ARTIFACT_DIR || require('node:os').tmpdir();
+    fs.mkdirSync(artifactDirectory, { recursive: true });
     await page.screenshot({
-      path: path.join(__dirname, '../verification/hand-boundary-points.png'),
+      path: path.join(artifactDirectory, 'hand-boundary-points.png'),
     });
     assert.deepEqual(errors, []);
     console.log(

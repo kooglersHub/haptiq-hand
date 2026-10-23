@@ -6,10 +6,10 @@ from unittest.mock import patch
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.limits import triangle_penetrations
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.limits import triangle_penetrations
+from haptiq.estimation.matching import fit_model
 
 
 class SampledPoseFitTests(unittest.TestCase):
@@ -73,7 +73,7 @@ class SampledPoseFitTests(unittest.TestCase):
         with (
             patch.object(self.model, "nearest", wraps=self.model.nearest) as exact,
             patch(
-                "digital_twin.sensor_identification.matching.triangle_penetrations",
+                "haptiq.estimation.matching.triangle_penetrations",
                 wraps=triangle_penetrations,
             ) as audit,
         ):
@@ -98,14 +98,14 @@ class SampledPoseFitTests(unittest.TestCase):
         self.assertGreater(fit["max_error_mm"], config.tolerance_mm)
 
     def test_preview_never_promotes_a_calibrated_pose_to_confirmed_identity(self):
-        from digital_twin.sensor_identification.classifier import identify_sensor
+        from haptiq.estimation.classifier import identify_sensor
 
         points = [
             dict(id=i, x=float(x), y=float(y), z=float(z), pressure=900.0)
             for i, (x, y, z) in enumerate(self.model.mesh.vertices)
         ]
         fit = dict(compatible=True, score=0.1, optimizer_success=True, consistent_refinements=2)
-        with patch("digital_twin.sensor_identification.classifier.fit_model", return_value=fit):
+        with patch("haptiq.estimation.classifier.fit_model", return_value=fit):
             result = identify_sensor(
                 points,
                 dict(SENSOR_A=self.model, SENSOR_B=self.model),
@@ -124,9 +124,12 @@ class SampledPoseFitTests(unittest.TestCase):
             return SimpleNamespace(x=x0, success=True, nfev=1)
 
         with (
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=freeze),
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching.least_squares",
+                side_effect=freeze,
+            ),
+            patch(
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
         ):

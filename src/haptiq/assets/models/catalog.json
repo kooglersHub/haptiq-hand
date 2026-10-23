@@ -1,0 +1,20 @@
+[
+  {
+    "id": "SENSOR_A",
+    "viewer_id": "vegabar_29",
+    "name": "VEGABAR 29",
+    "file": "VEGABAR_29_STL.stl",
+    "color": "#45cabb",
+    "units": "mm",
+    "sha256": "bcf73f55eb4674d01f7de225ce0e07d3e3d15954aff24f2f3e1519a6b050c974"
+  },
+  {
+    "id": "SENSOR_B",
+    "viewer_id": "vegabar_38",
+    "name": "VEGABAR 38",
+    "file": "VEGABAR_38.stl",
+    "color": "#edb358",
+    "units": "mm",
+    "sha256": "ec9ec5eebfb97d6af6623371953eb2bb4836858568952cb12f6c77e5b38e2366"
+  }
+]

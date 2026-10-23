@@ -3,9 +3,9 @@ import unittest
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.anchored_fit import fit_anchored
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
+from haptiq.estimation.anchored_fit import fit_anchored
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
 
 
 class AnchoredRollTests(unittest.TestCase):

@@ -3,7 +3,8 @@ node_modules/
 maintenance/
 documents/
 verification/
-digital_twin/hand_twin_6dof.html
-digital_twin/tactile_2d.html
-digital_twin/*.json
+src/haptiq/digital_twin/hand_twin_6dof.html
+src/haptiq/digital_twin/tactile_2d.html
+src/haptiq/digital_twin/assets/
+src/haptiq/digital_twin/templates/viewer.html
 uv.lock

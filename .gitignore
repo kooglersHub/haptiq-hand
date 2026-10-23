@@ -25,3 +25,11 @@ node_modules/
 .env.*
 !.env.example
 maintenance/
+
+# Intentional public documentation images
+!docs/images/
+!docs/images/*.png
+
+# Local CAD-export diagnostics; preserve outside public version control
+documents/Druckaufnehmer.log.txt
+documents/VEGABAR_29_STEP.log.txt

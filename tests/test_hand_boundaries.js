@@ -1,12 +1,15 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   path = require('node:path');
-global.JointKinematics = require('../digital_twin/joint_kinematics.js');
+global.JointKinematics = require('../src/haptiq/digital_twin/joint_kinematics.js');
 const K = JointKinematics,
-  T = require('../digital_twin/tactile_points.js');
-const B = require('../digital_twin/sensor_identification/boundaries.js');
-const { capture } = require('../digital_twin/sensor_identification/measurements.js');
-const html = fs.readFileSync(path.join(__dirname, '../digital_twin/hand_twin_6dof.html'), 'utf8');
+  T = require('../src/haptiq/digital_twin/tactile_points.js');
+const B = require('../src/haptiq/digital_twin/sensor_identification/boundaries.js');
+const { capture } = require('../src/haptiq/digital_twin/sensor_identification/measurements.js');
+const html = fs.readFileSync(
+  path.join(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html'),
+  'utf8',
+);
 const d = JSON.parse(
   html.match(/<script id="jointProfileData" type="application\/json">(.*?)<\/script>/s)[1],
 );

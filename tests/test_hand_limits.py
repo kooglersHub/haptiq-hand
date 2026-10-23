@@ -1,15 +1,12 @@
-import sys
 import unittest
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.adapter import identify_frame
-from digital_twin.sensor_identification.classifier import identify_sensor
-from digital_twin.sensor_identification.limits import penetration_residual, valid_boundaries
+from haptiq.estimation.adapter import identify_frame
+from haptiq.estimation.classifier import identify_sensor
+from haptiq.estimation.limits import penetration_residual, valid_boundaries
 
 
 class LimitsTests(unittest.TestCase):
@@ -51,9 +48,7 @@ class LimitsTests(unittest.TestCase):
             boundary_points=[boundary],
         )
         fit = dict(compatible=True, optimizer_success=True, consistent_refinements=2, score=0)
-        with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=fit
-        ) as fn:
+        with patch("haptiq.estimation.classifier.fit_model", return_value=fit) as fn:
             model = SimpleNamespace(
                 mesh=SimpleNamespace(extents=np.array([1.0, 2.0, 3.0])), source_sha256=None
             )

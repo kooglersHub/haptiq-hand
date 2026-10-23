@@ -2,9 +2,10 @@ const assert = require('node:assert/strict'),
   path = require('node:path'),
   fs = require('node:fs');
 const root = path.resolve(__dirname, '..');
-const H = require(path.join(root, 'digital_twin/sensor_identification/history.js'));
-const K = require(path.join(root, 'digital_twin/joint_kinematics.js'));
-const read = (n) => JSON.parse(fs.readFileSync(path.join(root, 'digital_twin', n), 'utf8'));
+const H = require(path.join(root, 'src/haptiq/digital_twin/sensor_identification/history.js'));
+const K = require(path.join(root, 'src/haptiq/digital_twin/joint_kinematics.js'));
+const read = (n) =>
+  JSON.parse(fs.readFileSync(path.join(root, 'src/haptiq/digital_twin', n), 'utf8'));
 const profile = read('joint_geometry_profiles_for_codex.json').primary_profiles
   .rh56_tactile_toolkit_left;
 const context = {
@@ -42,11 +43,9 @@ assert(frame.thumb_closure_sample.thumb_pressures.length >= 3);
 assert.equal(frame.hand_snapshot.angles_act[4], 0);
 assert.deepEqual(H.runs.validateFrame(frame).thumb_closure_sample, frame.thumb_closure_sample);
 assert.equal(H.runs.build([row(1, 0, false)], context).thumb_closure_sample, null);
-const sandbox = {};
+const sandbox = { HaptiqCandidates: require('../src/haptiq/digital_twin/frontend/candidates.js') };
 require('node:vm').runInNewContext(
-  fs
-    .readFileSync(path.join(root, 'digital_twin/sensor_identification/simulation.js'), 'utf8')
-    .split('/* One page:')[0],
+  fs.readFileSync(path.join(root, 'src/haptiq/digital_twin/frontend/estimate_feedback.js'), 'utf8'),
   sandbox,
 );
 const F = sandbox.EstimateFeedback;

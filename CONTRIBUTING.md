@@ -1,53 +1,23 @@
 # Contributing
 
-Keep changes focused and preserve the distinction between measured contacts,
-search heuristics, and validated geometry. In particular, an empirical starting
-pose or a promising contact fit must never be presented as confirmed identity.
+Read [architecture](docs/ARCHITECTURE.md) and keep changes in their owning package.
+Use English code and documentation, descriptive names, small coherent functions and absolute
+`haptiq.*` imports. Add abstractions for concrete shared responsibilities. Preserve concurrent
+edits, source CAD, recorded datasets and vendor references.
 
-Use descriptive names, short coherent functions, and comments that explain why
-an operation is necessary. Remove dead code rather than leaving commented-out
-implementations. Avoid abstractions until there is a concrete need for them.
-Preserve numerical tolerances and coordinate frames when refactoring geometry.
+Measured contacts, search heuristics and validated geometry are different kinds of evidence.
+Never present an empirical starting pose or provisional contact fit as confirmed identity.
+Preserve numerical tolerances and coordinate frames during structural refactoring.
 
-## Development checks
+Follow [development checks](docs/TESTING.md). Format editable sources before rebuilding the
+viewer. Add meaningful regression tests for behavior changes and contracts; keep geometry
+sources and generated products separate. The package verification must work outside the checkout.
 
-```sh
-uv sync --extra sensor-identification --group dev --no-install-project --inexact
-uv run --no-sync ruff check .
-uv run --no-sync ruff format --check .
-uv run --no-sync python -B -m unittest discover -s tests -v
-npm install
-npm run format:check
-npm test
-```
+Use one persistent local server at `http://127.0.0.1:18765/`. Automated checks construct an
+in-process server on port 0 and shut it down in teardown. Never stop the separate Blackforest
+hardware-control program as viewer cleanup. Use `maintenance/` for staging, logs and recovery.
 
-Use `ruff format .` and `npm run format` to apply the repository's formatting.
-Regenerate embedded viewer modules with:
-
-```sh
-uv run --no-sync python digital_twin/rebuild_joint_viewer.py
-```
-
-Keep source meshes and calibration data intact when rebuilding. The generated
-HTML is excluded from general-purpose formatting so mesh data stays stable.
-
-Add meaningful regression tests for behavior changes. Existing geometry tests
-cover coordinate frames, exact triangle queries, first-surface visibility,
-independent shaft rotation, and partial hand-volume checks. Browser tests can
-use Playwright; install Chromium with `npx playwright install chromium` on Linux.
-On Windows they use Microsoft Edge by default. `PLAYWRIGHT_CHANNEL` overrides
-the browser channel, and `PLAYWRIGHT_PACKAGE` can select an existing package.
-
-Automated HTTP checks must bind an in-process server to port 0 and close it in
-teardown. Keep the normal viewer on `http://127.0.0.1:18765/`. Tests and viewer
-maintenance must never stop the separate hardware-control program.
-
-Do not commit credentials, local environments, recordings, generated reports,
-or caches. Check asset provenance and redistribution permission before adding
-third-party geometry or documents.
-
-## References
-
-- [Google: what to look for in a code review](https://google.github.io/eng-practices/review/reviewer/looking-for.html)
-- [Ruff configuration](https://docs.astral.sh/ruff/configuration/)
-- [Prettier configuration](https://prettier.io/docs/configuration)
+Do not commit local environments, credentials, recordings, caches or generated test screenshots.
+Preserve attribution and provenance for third-party assets. See [handover](docs/HANDOVER.md)
+for configuration, acceptance and release steps, and [extension guide](docs/EXTENDING.md)
+for adding candidates or measurement sources.

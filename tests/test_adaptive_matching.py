@@ -10,9 +10,9 @@ import trimesh
 from scipy.optimize import least_squares as solve
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import _distinct_starts, fit_model
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import _distinct_starts, fit_model
 
 
 class AdaptiveMatchingTests(unittest.TestCase):
@@ -55,10 +55,13 @@ class AdaptiveMatchingTests(unittest.TestCase):
 
         with (
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=frozen),
+            patch(
+                "haptiq.estimation.matching.least_squares",
+                side_effect=frozen,
+            ),
         ):
             fit = fit_model(self.model, contacts, np.empty((0, 3)), np.empty(0), config)
         self.assertFalse(fit["compatible"])
@@ -113,10 +116,13 @@ class AdaptiveMatchingTests(unittest.TestCase):
 
         with (
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=frozen),
+            patch(
+                "haptiq.estimation.matching.least_squares",
+                side_effect=frozen,
+            ),
         ):
             fit = fit_model(
                 self.model,
@@ -148,10 +154,13 @@ class AdaptiveMatchingTests(unittest.TestCase):
 
         with (
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=frozen),
+            patch(
+                "haptiq.estimation.matching.least_squares",
+                side_effect=frozen,
+            ),
             patch.object(
                 self.model, "nearest_sampled", side_effect=AssertionError("approximate final query")
             ),
@@ -182,11 +191,11 @@ class AdaptiveMatchingTests(unittest.TestCase):
 
         with (
             patch(
-                "digital_twin.sensor_identification.matching._rigid",
+                "haptiq.estimation.matching._rigid",
                 return_value=(np.eye(3), np.zeros(3)),
             ),
             patch(
-                "digital_twin.sensor_identification.matching.least_squares",
+                "haptiq.estimation.matching.least_squares",
                 side_effect=initial_pose_then_solve,
             ),
         ):

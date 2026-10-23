@@ -15,7 +15,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       errors = [];
     page.on('pageerror', (e) => errors.push(e.message));
     const revision = fs
-      .readFileSync(root + '/digital_twin/sensor_identification/web_service.py', 'utf8')
+      .readFileSync(root + '/src/haptiq/contracts.py', 'utf8')
       .match(/ESTIMATOR_REVISION\s*=\s*['"]([^'"]+)['"]/)[1];
     let request;
     await page.route('**/api/probing-runs', (r) =>

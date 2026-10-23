@@ -3,10 +3,7 @@ const fs = require('node:fs'),
   assert = require('node:assert/strict'),
   { pathToFileURL } = require('node:url');
 const estimatorRevision = fs
-  .readFileSync(
-    require('node:path').join(__dirname, '../digital_twin/sensor_identification/web_service.py'),
-    'utf8',
-  )
+  .readFileSync(require('node:path').join(__dirname, '../src/haptiq/contracts.py'), 'utf8')
   .match(/ESTIMATOR_REVISION\s*=\s*['"]([^'"]+)['"]/)[1];
 const { chromium } = require('playwright');
 (async () => {
@@ -61,7 +58,7 @@ const { chromium } = require('playwright');
       });
     });
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () => document.querySelector('#onePageApp') && window.HandEstimate,
@@ -141,8 +138,7 @@ const { chromium } = require('playwright');
       false,
     );
     await page.selectOption('#estimateCandidate', 'SENSOR_A');
-    const verification =
-      process.env.HAND_VERIFICATION_DIR || path.join(__dirname, '../verification');
+    const verification = process.env.HAND_VIEWER_ARTIFACT_DIR || require('node:os').tmpdir();
     fs.mkdirSync(verification, { recursive: true });
     await page.screenshot({ path: path.join(verification, 'estimate-in-twin.png') });
     reject = true;
@@ -182,7 +178,7 @@ const { chromium } = require('playwright');
       true,
     );
     assert.equal(await page.isVisible('#estimatePoseWarning'), true);
-    await page.click('#dataManual');
+    await page.click('#dataLive');
     reject = false;
     assert.equal(await page.isVisible('#estimatePoseWarning'), false);
     assert.deepEqual(errors, []);

@@ -1,7 +1,6 @@
 """Observed external closure and CSV capture; no motor connection is opened."""
 
 import csv
-import sys
 import tempfile
 import time
 import unittest
@@ -12,12 +11,10 @@ from unittest.mock import Mock, patch
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "digital_twin"))
 import test_taxel_coordinates as relay_tests
 
-from logic.grasp_capture import GraspCapture
-from logic.grasp_manager import GraspManager
+from haptiq.capture.taxels import GraspCapture
+from haptiq.logic.grasp_manager import GraspManager
 
 
 class ClosureTests(unittest.TestCase):
@@ -36,7 +33,7 @@ class ClosureTests(unittest.TestCase):
             "tactile_mean_matrix": np.zeros((1, 17)),
             "tactile_matrix": np.full((112, 17), 100 if contact else 0),
         }
-        with patch("logic.grasp_manager.time.time", return_value=now):
+        with patch("haptiq.logic.grasp_manager.time.time", return_value=now):
             result = self.manager.step(self.robot, data)
         self.assertEqual(self.robot.mock_calls, [])
         return result
@@ -82,7 +79,7 @@ class ClosureTests(unittest.TestCase):
 
     def test_timeout_waits_for_external_reopening_and_second_capture(self):
         self.closed()
-        with patch("logic.grasp_manager.confirm_grip", return_value=(False, "empty", {})):
+        with patch("haptiq.logic.grasp_manager.confirm_grip", return_value=(False, "empty", {})):
             self.step(14)
         self.assertEqual(self.manager.state, "resetting")
         self.step(30)
@@ -94,12 +91,12 @@ class ClosureTests(unittest.TestCase):
 
     def test_confirmation_needs_continuously_valid_stable_measurements(self):
         self.closed()
-        with patch("logic.grasp_manager.confirm_grip", return_value=(True, "ok", {})):
+        with patch("haptiq.logic.grasp_manager.confirm_grip", return_value=(True, "ok", {})):
             self.step(11)
             self.step(11.5)
-        with patch("logic.grasp_manager.confirm_grip", return_value=(False, "lost", {})):
+        with patch("haptiq.logic.grasp_manager.confirm_grip", return_value=(False, "lost", {})):
             self.step(11.6)
-        with patch("logic.grasp_manager.confirm_grip", return_value=(True, "ok", {})):
+        with patch("haptiq.logic.grasp_manager.confirm_grip", return_value=(True, "ok", {})):
             self.step(11.7)
             self.assertEqual(self.manager.state, "settling")
             self.step(12.8)
@@ -116,7 +113,10 @@ class CaptureTests(relay_tests.TaxelRelayTests):
                 self.post(self.points)
                 after = time.time()
                 self.assertEqual(
-                    __import__("taxel_coordinates").get_taxel_positions(self.url, after=after), []
+                    __import__(
+                        "haptiq.taxel_coordinates", fromlist=["get_taxel_positions"]
+                    ).get_taxel_positions(self.url, after=after),
+                    [],
                 )
                 fresh = deepcopy(self.points)
                 fresh[0]["pressure"] = None
@@ -158,7 +158,7 @@ class CaptureTests(relay_tests.TaxelRelayTests):
             capture = GraspCapture(directory, self.url, wait_timeout=0.15)
             try:
                 with patch(
-                    "logic.grasp_capture.get_taxel_positions",
+                    "haptiq.capture.taxels.get_taxel_positions",
                     side_effect=HTTPError(self.url, 404, "Not Found", None, None),
                 ):
                     with self.assertRaisesRegex(RuntimeError, "restart the updated"):

@@ -5,7 +5,7 @@ import unittest
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.geometry import CandidateModel, load_candidates
+from haptiq.estimation.geometry import CandidateModel, load_candidates
 
 
 class ExactSurfaceQueryTests(unittest.TestCase):

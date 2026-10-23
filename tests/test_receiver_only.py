@@ -1,14 +1,12 @@
 """Read-only hardware contract, using a fake transport and no real hand."""
 
 import ast
-import sys
 import unittest
 from pathlib import Path
 from unittest.mock import Mock, patch
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-from interface.robot_control import RobotHandController
+from haptiq.telemetry.receiver import RobotHandController
 
 
 class ReadOnlyTests(unittest.TestCase):
@@ -23,14 +21,14 @@ class ReadOnlyTests(unittest.TestCase):
             return response
 
         client.read_holding_registers.side_effect = read
-        with patch("interface.robot_control.ModbusTcpClient", return_value=client) as factory:
+        with patch("haptiq.telemetry.receiver.ModbusTcpClient", return_value=client) as factory:
             robot = RobotHandController()
             factory.assert_called_once()
             self.assertEqual(client.mock_calls, [unittest.mock.call.connect()])
             result = robot.poll()
             self.assertEqual(result["angles"].tolist(), [321] * 6)
             self.assertEqual(robot.current_angles, [321] * 6)
-            with patch("interface.robot_control.time.sleep"):
+            with patch("haptiq.telemetry.receiver.time.sleep"):
                 robot.calibrate_offsets()
             robot.read_error()
             addresses = [c.kwargs["address"] for c in client.read_holding_registers.call_args_list]
@@ -41,7 +39,7 @@ class ReadOnlyTests(unittest.TestCase):
             )
 
     def test_mock_mode_never_constructs_network_client(self):
-        with patch("interface.robot_control.ModbusTcpClient") as factory:
+        with patch("haptiq.telemetry.receiver.ModbusTcpClient") as factory:
             robot = RobotHandController(mock=True)
             robot.poll()
         factory.assert_not_called()
@@ -70,7 +68,7 @@ class ReadOnlyTests(unittest.TestCase):
             "close_hand",
             "close_on_contact",
         }
-        for path in (ROOT / "src").rglob("*.py"):
+        for path in (ROOT / "src/haptiq").rglob("*.py"):
             # The merged active prober is retained for the separate controller.
             # Receiver entrypoints must never import it.
             if path.name == "thumb_prober.py":
@@ -79,7 +77,7 @@ class ReadOnlyTests(unittest.TestCase):
                 if isinstance(node, ast.Call) and isinstance(node.func, ast.Attribute):
                     self.assertNotIn(node.func.attr, forbidden, str(path))
         for name in ("main.py", "logic/grasp_manager.py"):
-            tree = ast.parse((ROOT / "src" / name).read_text(encoding="utf-8"))
+            tree = ast.parse((ROOT / "src/haptiq" / name).read_text(encoding="utf-8"))
             for node in ast.walk(tree):
                 if isinstance(node, ast.ImportFrom):
                     self.assertNotIn("thumb_prober", node.module or "")

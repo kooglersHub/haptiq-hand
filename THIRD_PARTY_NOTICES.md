@@ -7,10 +7,10 @@ Retain upstream notices and obtain the applicable terms from each source.
 
 - HaptIQ application lineage: [rht2001/haptiq](https://github.com/rht2001/haptiq).
 - Hand geometry and URDF provenance: see
-  `digital_twin/joint_asset_manifest.json`, including pinned source commits,
+  `src/haptiq/digital_twin/joint_asset_manifest.json`, including pinned source commits,
   URLs, and hashes from
   [AlexArutiunian/tactile-rh56dftp](https://github.com/AlexArutiunian/tactile-rh56dftp).
-- Sensor CAD: VEGABAR 29 and VEGABAR 38 exports under `documents/`, as identified
+- Sensor CAD: VEGABAR 29 and VEGABAR 38 STL exports under `src/haptiq/assets/models/` and original STEP exports under `documents/`, as identified
   by the embedded model source names and SHA-256 hashes.
 - Hardware reference: RH56DFTP user manual under `documents/`.
 

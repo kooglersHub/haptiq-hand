@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict'),
-  P = require('../digital_twin/joint_pressure');
+  P = require('../src/haptiq/digital_twin/joint_pressure');
 assert.equal(P.regions.length, 17);
 assert.equal(new Set(P.regions.map((r) => r.link)).size, 17);
 assert.equal(P.regions.find((r) => r.key === 'thumb_tip').link, 'left_thumb_force_sensor_4');

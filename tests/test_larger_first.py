@@ -1,14 +1,14 @@
-import sys
 import unittest
 from dataclasses import replace
-from pathlib import Path
 from unittest.mock import patch
 
 import trimesh
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.classifier import IdentificationConfig, identify_sensor
-from digital_twin.sensor_identification.geometry import CandidateModel
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    identify_sensor,
+)
+from haptiq.estimation.geometry import CandidateModel
 
 
 class LargerFirstTests(unittest.TestCase):
@@ -35,10 +35,30 @@ class LargerFirstTests(unittest.TestCase):
             rejection_reasons=[] if compatible else ["hand_penetration"],
         )
 
+    def test_third_candidate_is_fitted_before_smaller_fallback(self):
+        middle = CandidateModel(
+            "middle", trimesh.creation.box(extents=[15, 15, 15]), sample_count=100
+        )
+        with patch(
+            "haptiq.estimation.classifier.fit_model",
+            side_effect=[self.fit(False), self.fit(False), self.fit()],
+        ) as mock:
+            result = identify_sensor(
+                self.points,
+                {"SMALL": self.small, "MIDDLE": middle, "LARGE": self.large},
+                self.config,
+            )
+        self.assertEqual(
+            [call.args[0].name for call in mock.call_args_list], ["large", "middle", "small"]
+        )
+        self.assertEqual(result["placement_candidate"], "SMALL")
+        self.assertEqual(result["classification"], "AMBIGUOUS")
+
     def test_large_first_and_stop_when_acceptable(self):
         events = []
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=self.fit()
+            "haptiq.estimation.classifier.fit_model",
+            return_value=self.fit(),
         ) as mock:
             result = identify_sensor(self.points, self.models, self.config, progress=events.append)
         self.assertIs(mock.call_args.args[0], self.large)
@@ -50,7 +70,7 @@ class LargerFirstTests(unittest.TestCase):
 
     def test_collision_falls_back_to_small(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             side_effect=[self.fit(False), self.fit()],
         ) as mock:
             result = identify_sensor(self.points, self.models, self.config)
@@ -61,7 +81,7 @@ class LargerFirstTests(unittest.TestCase):
 
     def test_detailed_prefers_larger_despite_lower_small_score_and_retains_ambiguity(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             side_effect=[self.fit(score=2.0), self.fit(score=0.1)],
         ) as mock:
             result = identify_sensor(
@@ -74,7 +94,7 @@ class LargerFirstTests(unittest.TestCase):
 
     def test_neither_fit_is_not_accepted(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             side_effect=[self.fit(False), self.fit(False)],
         ):
             result = identify_sensor(self.points, self.models, self.config)
@@ -83,7 +103,8 @@ class LargerFirstTests(unittest.TestCase):
 
     def test_size_comes_from_geometry_not_label(self):
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=self.fit()
+            "haptiq.estimation.classifier.fit_model",
+            return_value=self.fit(),
         ) as mock:
             result = identify_sensor(
                 self.points, dict(SENSOR_A=self.large, SENSOR_B=self.small), self.config

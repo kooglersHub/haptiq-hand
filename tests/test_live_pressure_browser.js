@@ -4,7 +4,7 @@ const fs = require('node:fs'),
   os = require('node:os'),
   assert = require('node:assert/strict'),
   { pathToFileURL } = require('node:url');
-const P = require('../digital_twin/joint_pressure');
+const P = require('../src/haptiq/digital_twin/joint_pressure');
 const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
 (async () => {
   const browser = await chromium.launch({
@@ -72,7 +72,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       });
     });
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () => window.ProfileTwin?.snapshot().models.rh56_tactile_toolkit_left.raw[0] === 950,
@@ -119,9 +119,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     });
     assert.equal(markers.count, 1062);
     assert.deepEqual(markers.colors, [
-      [0, 170 / 255, 0],
-      [204 / 255, 204 / 255, 0],
-      [1, 136 / 255, 0],
+      [141 / 255, 211 / 255, 238 / 255],
+      [1, 118 / 255, 107 / 255],
+      [1, 118 / 255, 107 / 255],
     ]);
     let cloud = await page.evaluate(() => window.getContactCloud());
     assert.equal(cloud.valid, true);
@@ -137,6 +137,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     const out = process.env.HAND_VIEWER_ARTIFACT_DIR || os.tmpdir();
     fs.mkdirSync(out, { recursive: true });
     await page.screenshot({ path: path.join(out, 'hand_taxel_preview.png') });
+    await page.evaluate(() => {
+      document.querySelectorAll('#panel details').forEach((details) => {
+        details.open = true;
+      });
+    });
     const downloaded = page.waitForEvent('download');
     await page.click('#exportContactCloud');
     const dl = await downloaded,
@@ -175,13 +180,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       const s = window.ProfileTwin.snapshot(),
         color = document.getElementById('profileScene0').data.find((t) => t.name === 'Taxels')
           .marker.rgb[0];
-      return s.taxels[0].value === 3200 && color[0] === 1 && color[1] === 0
+      return s.taxels[0].value === 3200 && color[0] === 1 && color[1] === 118 / 255
         ? { peak: s.pressure.little_tip.peak, color }
         : null;
     });
     const observed = await stationary.jsonValue();
     assert.equal(observed.peak, 3500);
-    assert.deepEqual(observed.color, [1, 0, 0]);
+    assert.deepEqual(observed.color, [1, 118 / 255, 107 / 255]);
     const pressureShare = await page.waitForRequest(
       (r) => r.url() === taxelUrl && r.method() === 'POST' && r.postDataJSON()[0].pressure === 3200,
     );
@@ -216,13 +221,17 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       document.getElementById('profileStatus0').textContent.includes('Disconnected'),
     );
     assert.ok((await snap()).taxels.every((c) => c.value === null));
-    await page.click('#animateDemo');
+    await page.waitForSelector('#onePageApp');
+    await page.evaluate(() => {
+      document.getElementById('advancedData').open = true;
+    });
+    await page.evaluate(() => document.getElementById('animateDemo').click());
     await page.waitForFunction(
       () => window.ProfileTwin.snapshot().demo && window.getContactCloud().valid,
     );
     assert.equal((await page.evaluate(() => window.getContactCloud())).simulated, true);
     assert.match(await page.locator('#profileStatus0').textContent(), /simulated/);
-    await page.click('#animateDemo');
+    await page.evaluate(() => document.getElementById('animateDemo').click());
     assert.ok((await snap()).taxels.every((c) => c.value === null));
     assert.deepEqual(errors, []);
     assert.ok(

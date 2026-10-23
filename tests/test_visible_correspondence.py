@@ -4,9 +4,9 @@ import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.visible_correspondence import visible_correspondences
-from digital_twin.sensor_identification.visible_surface import first_surface
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.visible_correspondence import visible_correspondences
+from haptiq.estimation.visible_surface import first_surface
 
 
 class VisibleCorrespondenceTests(unittest.TestCase):

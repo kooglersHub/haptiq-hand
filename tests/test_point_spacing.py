@@ -4,9 +4,9 @@ from unittest.mock import patch
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import _spaced_indices, fit_model
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import _spaced_indices, fit_model
 
 
 class PointSpacingTests(unittest.TestCase):
@@ -49,7 +49,7 @@ class PointSpacingTests(unittest.TestCase):
             quick_preview=True, random_starts=1, refine_starts=1, icp_iterations=1, max_nfev=1
         )
         with patch(
-            "digital_twin.sensor_identification.matching.triangle_penetrations",
+            "haptiq.estimation.matching.triangle_penetrations",
             return_value=np.zeros(20),
         ) as audit:
             fit = fit_model(

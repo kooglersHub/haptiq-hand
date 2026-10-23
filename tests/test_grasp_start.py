@@ -4,7 +4,7 @@ from types import SimpleNamespace
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.grasp_prior import empirical_pose
+from haptiq.estimation.grasp_prior import empirical_pose
 
 SMALL = "bcf73f55eb4674d01f7de225ce0e07d3e3d15954aff24f2f3e1519a6b050c974"
 LARGE = "ec9ec5eebfb97d6af6623371953eb2bb4836858568952cb12f6c77e5b38e2366"

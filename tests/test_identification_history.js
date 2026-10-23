@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
-const H = require('../digital_twin/sensor_identification/history.js');
-const P = require('../digital_twin/joint_pressure.js');
+const H = require('../src/haptiq/digital_twin/sensor_identification/history.js');
+const P = require('../src/haptiq/digital_twin/joint_pressure.js');
 const matrix = Array.from({ length: 112 }, (_, r) => Array.from({ length: 17 }, (_, c) => r + c));
 const angles = [1000, 800, 600, 400, 200, 0];
 const text =

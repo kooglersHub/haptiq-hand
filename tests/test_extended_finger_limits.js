@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   path = require('node:path');
-const root = path.resolve(__dirname, '../digital_twin');
+const root = path.resolve(__dirname, '../src/haptiq/digital_twin');
 const R = require(root + '/sensor_identification/runs.js'),
   K = require(root + '/joint_kinematics.js');
 const read = (name) => JSON.parse(fs.readFileSync(path.join(root, name), 'utf8'));

@@ -1,17 +1,14 @@
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 from scipy.spatial.transform import Rotation
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.adapter import identify_frame
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel, load_candidates
-from digital_twin.sensor_identification.grasp_prior import empirical_pose
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.adapter import identify_frame
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel, load_candidates
+from haptiq.estimation.grasp_prior import empirical_pose
+from haptiq.estimation.matching import fit_model
 
 
 class EmpiricalGraspTests(unittest.TestCase):
@@ -40,7 +37,7 @@ class EmpiricalGraspTests(unittest.TestCase):
             ],
         )
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             return_value=dict(compatible=False, score=1, rejection_reasons=[]),
         ) as fit:
             identify_frame(frame, self.models, quick_preview=True)
@@ -108,7 +105,7 @@ class EmpiricalGraspTests(unittest.TestCase):
         )
         self.assertFalse(fit["compatible"])
         with patch(
-            "digital_twin.sensor_identification.matching.triangle_penetrations",
+            "haptiq.estimation.matching.triangle_penetrations",
             return_value=np.array([4.0]),
         ) as audit:
             fit = fit_model(
@@ -150,7 +147,7 @@ class EmpiricalGraspTests(unittest.TestCase):
             fun(x0)
             return SimpleNamespace(x=x0, success=True, nfev=1)
 
-        with patch("digital_twin.sensor_identification.matching.least_squares", side_effect=freeze):
+        with patch("haptiq.estimation.matching.least_squares", side_effect=freeze):
             f = fit_model(
                 m,
                 m.samples[:30],

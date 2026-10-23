@@ -1,21 +1,17 @@
-import sys
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
 import numpy as np
 import trimesh
-
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.limits import (
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.limits import (
     sampled_patch_penetrations,
     triangle_penetrations,
 )
-from digital_twin.sensor_identification.matching import _palm_starts, fit_model
+from haptiq.estimation.matching import _palm_starts, fit_model
 
 
 class CollisionOrientationTests(unittest.TestCase):
@@ -56,7 +52,7 @@ class CollisionOrientationTests(unittest.TestCase):
             max_nfev=1,
         )
         with patch(
-            "digital_twin.sensor_identification.matching.triangle_penetrations",
+            "haptiq.estimation.matching.triangle_penetrations",
             wraps=triangle_penetrations,
         ) as audit:
             fit = fit_model(

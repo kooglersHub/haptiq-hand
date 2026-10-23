@@ -3,11 +3,21 @@ const fs = require('node:fs'),
   vm = require('node:vm'),
   assert = require('node:assert/strict');
 const source = fs.readFileSync(
-  path.join(__dirname, '../digital_twin/sensor_identification/simulation.js'),
+  path.join(__dirname, '../src/haptiq/digital_twin/frontend/application.js'),
   'utf8',
 );
-const context = { module: { exports: {} }, Date };
-vm.runInNewContext(source.split('/* One page:')[0], context);
+const context = {
+  module: { exports: {} },
+  Date,
+  HaptiqCandidates: require('../src/haptiq/digital_twin/frontend/candidates.js'),
+};
+vm.runInNewContext(
+  fs.readFileSync(
+    path.join(__dirname, '../src/haptiq/digital_twin/frontend/estimate_feedback.js'),
+    'utf8',
+  ),
+  context,
+);
 const html = context.module.exports.render({
   status: 'complete',
   result: {

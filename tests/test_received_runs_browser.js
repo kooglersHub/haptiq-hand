@@ -19,7 +19,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       errors = [];
     page.on('pageerror', (error) => errors.push(error.message));
     await page.goto(base, { waitUntil: 'domcontentloaded' });
-    await page.waitForSelector('#startReceivedCapture', { timeout: 60000 });
+    await page.waitForSelector('#startReceivedCapture', { state: 'attached', timeout: 60000 });
+    await page.evaluate(() => {
+      document.querySelector('#receivedRuns').parentElement.open = true;
+    });
     await page.waitForFunction(() => window.HandHistory?.context()?.geometry, null, {
       timeout: 60000,
     });
@@ -53,26 +56,35 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       { timeout: 60000 },
     );
     assert.equal(await page.locator('#dataHistory').getAttribute('aria-selected'), 'true');
-    await page.waitForFunction(() => document.querySelector('#runCloudScene')._renderer, null, {
+    await page.click('#showCloud');
+    await page.waitForFunction(() => document.querySelector('#profileScene0')._renderer, null, {
       timeout: 60000,
     });
     const axes = () =>
       page.evaluate(() =>
-        document.querySelector('#runCloudScene').data.filter((t) => /^Global [XYZ]$/.test(t.name)),
+        document.querySelector('#profileScene0').data.filter((t) => /^Global [XYZ]$/.test(t.name)),
       );
     const frameAxes = await axes();
     assert.equal(frameAxes.length, 3);
+    const vectors = frameAxes.map((trace) =>
+      ['x', 'y', 'z'].map((key) => trace[key][1] - trace[key][0]),
+    );
     frameAxes.forEach((trace, axis) => {
       assert.equal(trace.visible, true);
       assert.equal(trace.mode, 'lines');
       assert.deepEqual(
-        ['x', 'y', 'z'].map((k) => trace[k][0]),
-        [0, 0, 0],
+        ['x', 'y', 'z'].map((key) => trace[key][0]),
+        ['x', 'y', 'z'].map((key) => frameAxes[0][key][0]),
       );
-      assert.deepEqual(
-        ['x', 'y', 'z'].map((k) => trace[k][1]),
-        [0, 1, 2].map((k) => (k === axis ? 40 : 0)),
+      assert.ok(Math.abs(Math.hypot(...vectors[axis]) - 40) < 1e-8);
+      assert.ok(
+        Math.abs(
+          vectors[axis].reduce((sum, value, i) => sum + value * vectors[(axis + 1) % 3][i], 0),
+        ) < 1e-8,
       );
+    });
+    await page.evaluate(() => {
+      document.getElementById('runShowAxes').closest('details').open = true;
     });
     await page.uncheck('#runShowAxes');
     assert.ok((await axes()).every((t) => !t.visible));
@@ -83,6 +95,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     await page.check('#runShowLimits');
     assert.equal(await page.locator('#estimateButton').isEnabled(), true);
     const downloadPromise = page.waitForEvent('download');
+    await page.evaluate(() => {
+      document.querySelectorAll('#panel details').forEach((details) => {
+        details.open = true;
+      });
+    });
     await page.click('#downloadRun');
     const download = await downloadPromise,
       cloud = JSON.parse(fs.readFileSync(await download.path(), 'utf8'));
@@ -92,6 +109,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     assert.equal(cloud.frame, 'left_base_link');
     await page.click('#dataLive');
     const csvPromise = page.waitForEvent('download');
+    await page.evaluate(() => {
+      document.getElementById('receivedRuns').parentElement.open = true;
+    });
     await page.click('#downloadReceivedCSV');
     const csv = await csvPromise;
     assert.ok(fs.readFileSync(await csv.path(), 'utf8').includes('reported_state'));
@@ -161,6 +181,9 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     assert.equal(latest.runs[0].capture_mode, 'closure');
     assert.equal(latest.runs[0].reason, 'hand_reopened');
     await page.click('#dataLive');
+    await page.evaluate(() => {
+      document.getElementById('receivedRuns').parentElement.open = true;
+    });
     await page.uncheck('#captureOnClose');
     await page.waitForFunction(() =>
       document.getElementById('closureCaptureStatus').textContent.includes('off'),

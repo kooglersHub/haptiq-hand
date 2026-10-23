@@ -1,13 +1,10 @@
-import sys
 import tempfile
 import unittest
-from pathlib import Path
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.adapter import identify_frame
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.web_service import IdentificationService
+from haptiq.estimation.adapter import identify_frame
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.web_service import IdentificationService
 
 
 class HandToleranceTests(unittest.TestCase):
@@ -18,9 +15,7 @@ class HandToleranceTests(unittest.TestCase):
                 IdentificationConfig(hand_tolerance_mm=value)
 
     def test_frame_forwards_independent_hand_allowance(self):
-        with patch(
-            "digital_twin.sensor_identification.adapter.identify_sensor", return_value={}
-        ) as identify:
+        with patch("haptiq.estimation.adapter.identify_sensor", return_value={}) as identify:
             identify_frame(
                 dict(valid=True, frame="left_base_link", units="m", points=[]),
                 {},
@@ -43,17 +38,17 @@ class HandToleranceTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as folder:
             service = IdentificationService(folder)
             service._models = {}
-            with patch("digital_twin.sensor_identification.web_service.threading.Thread") as thread:
+            with patch("haptiq.estimation.web_service.threading.Thread") as thread:
                 service.start(request)
             worker = thread.call_args.kwargs
             self.assertEqual(worker["args"][1].hand_tolerance_mm, 4.5)
             with (
                 patch(
-                    "digital_twin.sensor_identification.web_service.identify_frame",
+                    "haptiq.estimation.web_service.identify_frame",
                     return_value={"fits": {}},
                 ) as identify,
                 patch(
-                    "digital_twin.sensor_identification.web_service.write_viewer",
+                    "haptiq.estimation.web_service.write_viewer",
                     side_effect=lambda path, *args, **kwargs: path.write_text("<html></html>"),
                 ),
             ):

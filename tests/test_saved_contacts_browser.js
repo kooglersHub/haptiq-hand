@@ -25,14 +25,18 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       });
     });
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () => document.querySelector('#profileScene0')._renderer?.focus && window.ProfileTwin,
       null,
       { timeout: 60000 },
     );
-    await page.click('#animateDemo');
+    await page.waitForSelector('#onePageApp');
+    await page.evaluate(() => {
+      document.getElementById('advancedData').open = true;
+    });
+    await page.evaluate(() => document.getElementById('animateDemo').click());
     await page.waitForFunction(() => window.getContactCloud()?.valid);
     let cloud = await page.evaluate(() => window.getContactCloud());
     if (process.env.HAND_SAVED_SAMPLE)
@@ -117,6 +121,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     );
     const handAxes = scene.axes;
     await page.click('#savedCloud');
+    await page.uncheck('#handModelVisible');
     scene = await shown();
     assert.equal(scene.meshes, 0);
     assert.equal(scene.points.x.length, cloud.points.length);
@@ -213,6 +218,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
         path: path.join(process.env.HAND_VIEWER_ARTIFACT_DIR, 'saved_cloud.png'),
       });
       await page.click('#savedHand');
+      await page.check('#handModelVisible');
       await page.screenshot({
         path: path.join(process.env.HAND_VIEWER_ARTIFACT_DIR, 'saved_hand.png'),
       });
@@ -234,6 +240,13 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     assert.equal((await shown()).meshes, 0);
     assert.equal((await shown()).others.visible, false);
     assert.equal(await page.locator('#showOtherTaxels').isDisabled(), true);
+    await page.uncheck('#handModelVisible');
+    await page.check('#handModelVisible');
+    assert.equal(
+      (await shown()).meshes,
+      0,
+      'Visibility controls must not invent a hand pose for mismatched geometry',
+    );
     await page.setInputFiles(
       '#savedFiles',
       file('empty.json', { ...cloud, points: [], centroids: [] }),
@@ -241,6 +254,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     await page.click('#savedCloud');
     assert.equal((await shown()).points.x.length, 0);
     assert.equal((await shown()).others.x.length, 1062);
+    await page.check('#handModelVisible');
     await page.click('#savedReturn');
     assert.equal((await page.evaluate(() => window.ProfileTwin.snapshot())).replay, null);
     assert.equal((await page.evaluate(() => window.ProfileTwin.snapshot())).live, true);

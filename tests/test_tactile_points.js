@@ -2,14 +2,16 @@
 const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   path = require('node:path');
-const K = require('../digital_twin/joint_kinematics'),
-  P = require('../digital_twin/joint_pressure'),
-  T = require('../digital_twin/tactile_points');
+const K = require('../src/haptiq/digital_twin/joint_kinematics'),
+  P = require('../src/haptiq/digital_twin/joint_pressure'),
+  T = require('../src/haptiq/digital_twin/tactile_points');
 const g = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '../digital_twin/tactile_geometry.json')),
+    fs.readFileSync(path.join(__dirname, '../src/haptiq/digital_twin/tactile_geometry.json')),
   ),
   reference = JSON.parse(
-    fs.readFileSync(path.join(__dirname, '../digital_twin/joint_geometry_profiles_for_codex.json')),
+    fs.readFileSync(
+      path.join(__dirname, '../src/haptiq/digital_twin/joint_geometry_profiles_for_codex.json'),
+    ),
   ),
   profile = reference.primary_profiles.rh56_tactile_toolkit_left;
 let checks = 0;

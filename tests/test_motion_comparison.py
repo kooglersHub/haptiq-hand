@@ -4,9 +4,9 @@ from unittest.mock import patch
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.classifier import compare_anchored_candidates
-from digital_twin.sensor_identification.finite_hand import FiniteHand
-from digital_twin.sensor_identification.geometry import CandidateModel
+from haptiq.estimation.classifier import compare_anchored_candidates
+from haptiq.estimation.finite_hand import FiniteHand
+from haptiq.estimation.geometry import CandidateModel
 
 
 class CoverageTests(unittest.TestCase):
@@ -28,7 +28,7 @@ class CoverageTests(unittest.TestCase):
             joint_angles_rad=dict(thumb=0),
         )
         with patch(
-            "digital_twin.sensor_identification.finite_hand._assets",
+            "haptiq.estimation.finite_hand._assets",
             return_value=(profile, [("left_thumb_2", model)], [], "ref"),
         ):
             frozen = FiniteHand.from_snapshot(snapshot)

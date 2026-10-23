@@ -1,11 +1,8 @@
-import sys
 import tempfile
 import time
 import unittest
-from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.web_service import IdentificationService
+from haptiq.estimation.web_service import IdentificationService
 
 
 class LivePoseTests(unittest.TestCase):

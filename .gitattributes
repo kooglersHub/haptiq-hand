@@ -18,5 +18,5 @@
 *.png -text
 
 # Generated embedded bundles do not define the project language mix.
-digital_twin/hand_twin_6dof.html linguist-generated=true
-digital_twin/tactile_2d.html linguist-generated=true
+src/haptiq/digital_twin/hand_twin_6dof.html linguist-generated=true
+src/haptiq/digital_twin/tactile_2d.html linguist-generated=true

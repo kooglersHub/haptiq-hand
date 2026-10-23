@@ -3,14 +3,12 @@
 import hashlib
 import json
 import re
-import sys
 import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "digital_twin"))
-import rebuild_joint_viewer as builder
+from haptiq.digital_twin import rebuild_joint_viewer as builder
 
 
 class ViewerRebuildTests(unittest.TestCase):
@@ -42,15 +40,20 @@ class ViewerRebuildTests(unittest.TestCase):
             ]
             for name in names:
                 (root / name).write_text(f"/* module {name} */", encoding="utf-8")
+            (root / "assets").mkdir()
+            (root / "templates").mkdir()
+            (root / "frontend").mkdir()
+            (root / "assets/joint_profile_assets.json").write_text(
+                json.dumps(data), encoding="utf-8"
+            )
+            (root / "templates/application_panel.html").write_text(
+                "<p>application</p>", encoding="utf-8"
+            )
+            (root / "frontend/application.css").write_text("/* fixture */", encoding="utf-8")
             viewer = root / "hand_twin_6dof.html"
-            viewer.write_text(
+            (root / "templates/viewer.html").write_text(
                 "<main>retained prefix</main>"
-                + builder.BEGIN
-                + '<script id="jointProfileData" type="application/json">'
-                + json.dumps(data)
-                + "</script>"
-                + builder.END
-                + '<script id="toolkitControls">old controller</script>'
+                + "{{JOINT_EXTENSION}}{{TOOLKIT_CONTROLS}}"
                 + '<script src="sensor_identification/history.js"></script>',
                 encoding="utf-8",
             )
@@ -59,9 +62,11 @@ class ViewerRebuildTests(unittest.TestCase):
                 patch.object(builder, "build", return_value=data["tactile_geometry"]),
                 patch.object(builder, "build_sensor_objects", return_value=data["sensor_objects"]),
             ):
-                builder.main()
+                builder.main([])
                 first = viewer.read_text(encoding="utf-8")
-                builder.main()
+                viewer.unlink()
+                builder.main([])
+                builder.main(["--check"])
                 self.assertEqual(viewer.read_text(encoding="utf-8"), first)
 
             def embedded(identity):

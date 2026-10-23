@@ -1,6 +1,7 @@
 # RH56DFTP Dexterous Hand — Quick API & Modbus Reference
 
-AI- extracted API- Lookup/Cheatsheet.
+Hardware protocol reference. Application HTTP contracts are documented in [docs/CONTRACTS.md](docs/CONTRACTS.md).
+This document includes hardware write registers for reference; the HaptIQ receiver reads telemetry only.
 Compact register and function lookup extracted from *Inspire-Robots RH56DFTP User Manual (V1.0.0)*.
 
 ---

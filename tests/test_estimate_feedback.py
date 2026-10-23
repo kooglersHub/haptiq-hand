@@ -1,17 +1,22 @@
 import hashlib
 import json
-import sys
 import tempfile
 import unittest
 from dataclasses import replace
 from pathlib import Path
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "digital_twin"))
-import sensor_identification.web_service as service_module
 import trimesh
-from sensor_identification.classifier import IdentificationConfig, identify_sensor
-from sensor_identification.geometry import CandidateModel
-from sensor_identification.web_service import ESTIMATOR_REVISION, IdentificationService
+
+import haptiq.estimation.web_service as service_module
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    identify_sensor,
+)
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.web_service import (
+    ESTIMATOR_REVISION,
+    IdentificationService,
+)
 
 
 class FeedbackProgressTests(unittest.TestCase):
@@ -42,7 +47,7 @@ class FeedbackProgressTests(unittest.TestCase):
             state = dict(
                 status="complete",
                 estimator_revision=ESTIMATOR_REVISION,
-                workspace=str(Path(service_module.__file__).resolve().parents[2]),
+                workspace=str(service_module.workspace_root()),
                 result={"classification": "AMBIGUOUS", "fits": {}},
                 job_id="saved",
                 report_sha256=hashlib.sha256(b"<html>report</html>").hexdigest(),

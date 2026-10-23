@@ -2,10 +2,11 @@ const assert = require('node:assert/strict'),
   fs = require('node:fs'),
   path = require('node:path');
 const root = process.env.HAND_CHECKOUT || path.resolve(__dirname, '..');
-const H = require(path.join(root, 'digital_twin/sensor_identification/history.js')),
+const H = require(path.join(root, 'src/haptiq/digital_twin/sensor_identification/history.js')),
   R = H.runs;
-const K = require(path.join(root, 'digital_twin/joint_kinematics.js'));
-const read = (n) => JSON.parse(fs.readFileSync(path.join(root, 'digital_twin', n), 'utf8'));
+const K = require(path.join(root, 'src/haptiq/digital_twin/joint_kinematics.js'));
+const read = (n) =>
+  JSON.parse(fs.readFileSync(path.join(root, 'src/haptiq/digital_twin', n), 'utf8'));
 const geometry = read('tactile_geometry.json'),
   profile = read('joint_geometry_profiles_for_codex.json').primary_profiles
     .rh56_tactile_toolkit_left;

@@ -8,10 +8,11 @@ permissions:
 jobs:
   checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    timeout-minutes: 20
     env:
       OPENBLAS_NUM_THREADS: "1"
       OMP_NUM_THREADS: "1"
+      HAND_DATA_DIR: ${{ runner.temp }}/haptiq-data
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-python@v5
@@ -20,17 +21,50 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: "24"
-      - name: Install Python tools and dependencies
-        run: python -m pip install ".[sensor-identification]" ruff==0.17.1
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --extra sensor-identification --group dev
       - name: Python lint and formatting
         run: |
-          ruff check .
-          ruff format --check .
-      - name: Install JavaScript development tools
-        run: npm install --ignore-scripts --no-audit --no-fund
+          uv run --no-sync ruff check .
+          uv run --no-sync ruff format --check .
+      - run: npm ci --ignore-scripts --no-audit --no-fund
       - name: JavaScript formatting and unit tests
         run: |
           npm run format:check
           npm test
-      - name: Python unit and integration tests
-        run: python -B -m unittest discover -s tests -v
+      - name: Viewer build consistency
+        run: uv run --no-sync haptiq-build-viewer --check
+      - name: Python unit and HTTP integration tests
+        run: uv run --no-sync python -B -m unittest discover -s tests -v
+      - name: Build and verify distributable package
+        run: |
+          uv build --wheel
+          uv run --no-sync python scripts/check-wheel.py dist
+
+  browser:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    env:
+      OPENBLAS_NUM_THREADS: "1"
+      OMP_NUM_THREADS: "1"
+      HAND_DATA_DIR: ${{ runner.temp }}/haptiq-browser-data
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+      - uses: astral-sh/setup-uv@v6
+      - run: uv sync --locked --extra sensor-identification
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npx playwright install --with-deps chromium
+      - run: uv run --no-sync python scripts/test-browser.py --artifacts maintenance/browser-artifacts
+      - name: Preserve browser screenshots on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-artifacts
+          path: maintenance/browser-artifacts
+          if-no-files-found: ignore

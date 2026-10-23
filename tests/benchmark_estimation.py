@@ -13,23 +13,34 @@ import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT))
 import numpy as np
 
-from digital_twin.sensor_identification import classifier, geometry, matching
-from digital_twin.sensor_identification.adapter import normalize_frame
-from digital_twin.sensor_identification.classifier import IdentificationConfig, valid_measurements
-from digital_twin.sensor_identification.demo import synthetic_points
+from haptiq.candidates import load_catalog
+from haptiq.estimation import classifier, geometry, matching
+from haptiq.estimation.adapter import normalize_frame
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    valid_measurements,
+)
+from haptiq.estimation.demo import synthetic_points
+from haptiq.settings import MODEL_DIRECTORY
 
 
 def baseline_module(ref, filename):
-    name = "digital_twin.sensor_identification._benchmark_" + filename
-    source = subprocess.check_output(
-        ["git", "show", f"{ref}:digital_twin/sensor_identification/{filename}.py"], cwd=ROOT
-    )
+    name = "haptiq.estimation._benchmark_" + filename
+    for location in (
+        f"src/haptiq/estimation/{filename}.py",
+        f"digital_twin/sensor_identification/{filename}.py",
+    ):
+        result = subprocess.run(["git", "show", f"{ref}:{location}"], cwd=ROOT, capture_output=True)
+        if result.returncode == 0:
+            source = result.stdout
+            break
+    else:
+        raise ValueError(f"No estimator module {filename} in baseline {ref}")
     module = types.ModuleType(name)
-    module.__package__ = "digital_twin.sensor_identification"
-    module.__file__ = str(ROOT / "digital_twin/sensor_identification" / f"{filename}.py")
+    module.__package__ = "haptiq.estimation"
+    module.__file__ = str(ROOT / "src/haptiq/estimation" / f"{filename}.py")
     sys.modules[name] = module
     exec(compile(source, module.__file__, "exec"), module.__dict__)
     return module
@@ -40,7 +51,12 @@ def main():
     parser.add_argument("--baseline-ref", required=True)
     parser.add_argument("--frame", action="append", type=Path, default=[])
     parser.add_argument("--output", type=Path)
-    parser.add_argument("--cad-root", type=Path, default=ROOT)
+    parser.add_argument(
+        "--cad-root",
+        type=Path,
+        default=MODEL_DIRECTORY,
+        help="Model directory containing catalog.json",
+    )
     args = parser.parse_args()
     revision = subprocess.check_output(
         ["git", "rev-parse", args.baseline_ref], cwd=ROOT, text=True
@@ -48,7 +64,12 @@ def main():
     old_matching = baseline_module(revision, "matching")
     old_geometry = baseline_module(revision, "geometry")
     models = geometry.load_candidates(args.cad_root)
-    old_models = old_geometry.load_candidates(args.cad_root)
+    old_models = {
+        candidate.id: old_geometry.CandidateModel.from_stl(
+            candidate.id, candidate.source(args.cad_root), units=candidate.units
+        )
+        for candidate in load_catalog(args.cad_root)
+    }
     # Compare warmed model caches, excluding one-time CAD loading/index build.
     for model in [*models.values(), *old_models.values()]:
         model.mesh.triangles_tree

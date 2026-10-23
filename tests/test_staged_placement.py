@@ -1,16 +1,16 @@
-import sys
 import unittest
-from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
 import numpy as np
 import trimesh
 
-sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from digital_twin.sensor_identification.classifier import IdentificationConfig, identify_sensor
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import fit_model
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    identify_sensor,
+)
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import fit_model
 
 
 class StagedPlacementTests(unittest.TestCase):
@@ -27,9 +27,12 @@ class StagedPlacementTests(unittest.TestCase):
 
         config = IdentificationConfig(quick_preview=True, tolerance_mm=100.0, point_spacing_mm=0.0)
         with (
-            patch("digital_twin.sensor_identification.matching.least_squares", side_effect=freeze),
             patch(
-                "digital_twin.sensor_identification.matching.triangle_penetrations",
+                "haptiq.estimation.matching.least_squares",
+                side_effect=freeze,
+            ),
+            patch(
+                "haptiq.estimation.matching.triangle_penetrations",
                 return_value=np.array([4.0]),
             ) as audit,
         ):
@@ -77,7 +80,7 @@ class StagedPlacementTests(unittest.TestCase):
             for i, (x, y, z) in enumerate(model.mesh.vertices)
         ]
         with patch(
-            "digital_twin.sensor_identification.classifier.fit_model",
+            "haptiq.estimation.classifier.fit_model",
             return_value=dict(compatible=True, score=0.0),
         ) as fit:
             identify_sensor(

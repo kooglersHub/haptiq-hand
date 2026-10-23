@@ -1,7 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs'),
   path = require('node:path');
-const root = path.join(__dirname, '../digital_twin');
+const root = path.join(__dirname, '../src/haptiq/digital_twin');
 const H = require(root + '/sensor_identification/history.js'),
   RunAPI = require(root + '/sensor_identification/runs.js');
 // These regression checks explicitly exercise full-sweep reconstruction.

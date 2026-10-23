@@ -4,7 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from digital_twin.sensor_identification import web_service
+from haptiq.estimation import web_service
 
 
 class EstimatorRevisionTests(unittest.TestCase):
@@ -20,7 +20,7 @@ class EstimatorRevisionTests(unittest.TestCase):
                 state = dict(
                     status="complete",
                     result={"fits": {}},
-                    workspace=str(Path(web_service.__file__).resolve().parents[2]),
+                    workspace=str(web_service.workspace_root()),
                     estimator_revision=revision,
                     report_sha256=hashlib.sha256(report).hexdigest(),
                 )

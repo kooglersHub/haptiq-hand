@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict'),
   fs = require('fs');
-const root = require('path').join(__dirname, '../digital_twin');
+const root = require('path').join(__dirname, '../src/haptiq/digital_twin');
 const H = require(root + '/sensor_identification/history.js'),
   K = require(root + '/joint_kinematics.js');
 const profile = JSON.parse(fs.readFileSync(root + '/joint_geometry_profiles_for_codex.json'))

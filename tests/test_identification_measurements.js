@@ -1,5 +1,5 @@
 const assert = require('node:assert/strict');
-const { capture } = require('../digital_twin/sensor_identification/measurements.js');
+const { capture } = require('../src/haptiq/digital_twin/sensor_identification/measurements.js');
 const cloud = {
   valid: true,
   frame: 'left_base_link',

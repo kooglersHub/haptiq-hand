@@ -3,7 +3,6 @@
 import csv
 import io
 import json
-import sys
 import tempfile
 import threading
 import time
@@ -12,9 +11,8 @@ from pathlib import Path
 from urllib.request import ProxyHandler, Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "digital_twin"))
-import bridge_server as bridge
-from received_runs import ReceivedRuns
+from haptiq.capture.runs import ReceivedRuns
+from haptiq.server import http as bridge
 
 
 class ReceivedRunTests(unittest.TestCase):
@@ -178,7 +176,7 @@ class ReceivedRunTests(unittest.TestCase):
                 bridge.normalize(packet)
 
     def test_http_capture_every_received_sample(self):
-        server = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        server = bridge.create_server(port=0)
         server.capture_directory = self.temp.name
         worker = threading.Thread(target=server.serve_forever, daemon=True)
         worker.start()

@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 import trimesh
 
-from digital_twin.sensor_identification.ray_bvh import TriangleBVH
+from haptiq.estimation.ray_bvh import TriangleBVH
 
 
 class RayBVHTests(unittest.TestCase):

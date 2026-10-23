@@ -28,7 +28,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       });
     });
     await page.goto(
-      pathToFileURL(path.resolve(__dirname, '../digital_twin/hand_twin_6dof.html')).href,
+      pathToFileURL(path.resolve(__dirname, '../src/haptiq/digital_twin/hand_twin_6dof.html')).href,
     );
     await page.waitForFunction(
       () =>
@@ -37,7 +37,11 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
       null,
       { timeout: 60000 },
     );
-    await page.click('#modeManual');
+    await page.waitForSelector('#onePageApp');
+    await page.evaluate(() => {
+      document.getElementById('advancedData').open = true;
+    });
+    await page.evaluate(() => document.getElementById('modeManual').click());
     const states = () => page.evaluate(() => window.getSensorObjects());
     const mesh = () =>
       page.evaluate(() =>
@@ -115,6 +119,10 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     await page.evaluate(() => new Promise(requestAnimationFrame));
     const saved = await states();
     await page.reload();
+    await page.waitForSelector('#onePageApp');
+    await page.evaluate(() => {
+      document.getElementById('advancedData').open = true;
+    });
     await page.waitForFunction(
       () => document.querySelector('#profileScene0')._renderer?.screenDelta,
       null,
@@ -148,7 +156,7 @@ const { chromium } = require(process.env.PLAYWRIGHT_PACKAGE || 'playwright');
     await page.click('#sensorObjectReset');
     assert.deepEqual((await states())[1], initial[1]);
     await page.evaluate(() => new Promise(requestAnimationFrame));
-    await page.click('#modeManual');
+    await page.evaluate(() => document.getElementById('modeManual').click());
     const stationary = await mesh();
     await page.fill('#n0', '200');
     await page.locator('#n0').dispatchEvent('change');

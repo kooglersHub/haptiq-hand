@@ -5,9 +5,12 @@ import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.classifier import IdentificationConfig, identify_sensor
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.matching import _palm_starts, fit_model
+from haptiq.estimation.classifier import (
+    IdentificationConfig,
+    identify_sensor,
+)
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.matching import _palm_starts, fit_model
 
 
 class PalmInitializationTests(unittest.TestCase):
@@ -101,9 +104,7 @@ class PalmInitializationTests(unittest.TestCase):
             for i, ((x, y, z), n) in enumerate(zip(self.palm, self.normals))
         ]
         fake = dict(compatible=False, score=10.0)
-        with patch(
-            "digital_twin.sensor_identification.classifier.fit_model", return_value=fake
-        ) as fitter:
+        with patch("haptiq.estimation.classifier.fit_model", return_value=fake) as fitter:
             identify_sensor(
                 points,
                 dict(SENSOR_A=self.model, SENSOR_B=self.model),

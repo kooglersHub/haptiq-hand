@@ -1,7 +1,6 @@
 """Viewer position relay: no second FK implementation and no hardware access."""
 
 import json
-import sys
 import threading
 import unittest
 from copy import deepcopy
@@ -11,18 +10,13 @@ from urllib.error import HTTPError
 from urllib.request import ProxyHandler, Request, build_opener
 
 ROOT = Path(__file__).resolve().parents[1]
-sys.path.insert(0, str(ROOT / "src"))
-sys.path.insert(0, str(ROOT / "digital_twin"))
-import bridge_server as bridge
-
-from taxel_coordinates import get_taxel_positions
+from haptiq.server import http as bridge
+from haptiq.taxel_coordinates import get_taxel_positions
 
 
 class TaxelRelayTests(unittest.TestCase):
     def setUp(self):
-        self.saved = deepcopy(bridge.TAXELS), bridge.TAXELS_RECEIVED_AT
-        bridge.TAXELS, bridge.TAXELS_RECEIVED_AT = [], 0
-        self.server = bridge.ThreadingHTTPServer(("127.0.0.1", 0), bridge.Handler)
+        self.server = bridge.create_server(port=0)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.url = f"http://127.0.0.1:{self.server.server_port}"
         self.opener = build_opener(ProxyHandler({}))
@@ -34,7 +28,6 @@ class TaxelRelayTests(unittest.TestCase):
     def tearDown(self):
         self.server.shutdown()
         self.server.server_close()
-        bridge.TAXELS, bridge.TAXELS_RECEIVED_AT = self.saved
 
     def post(self, points):
         request = Request(
@@ -46,10 +39,10 @@ class TaxelRelayTests(unittest.TestCase):
             return json.load(response)
 
     def test_roundtrip_preserves_exact_viewer_points_without_altering_telemetry(self):
-        state = deepcopy(bridge.STATE)
+        state = deepcopy(self.server.app_state.telemetry)
         self.assertEqual(self.post(self.points), {"ok": True})
         self.assertEqual(get_taxel_positions(self.url), self.points)
-        self.assertEqual(bridge.STATE, state)
+        self.assertEqual(self.server.app_state.telemetry, state)
         moved = deepcopy(self.points)
         moved[0]["z"] += 0.01
         self.post(moved)

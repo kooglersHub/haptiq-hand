@@ -12,7 +12,7 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
-DT = ROOT / "digital_twin"
+DT = ROOT / "src/haptiq/digital_twin"
 REFERENCE = json.loads((DT / "joint_geometry_profiles_for_codex.json").read_text(encoding="utf-8"))
 PROFILES = {"rh56_tactile_toolkit_left": REFERENCE["primary_profiles"]["rh56_tactile_toolkit_left"]}
 

@@ -5,8 +5,9 @@
   "description": "Development tools for the HaptIQ hand viewer",
   "scripts": {
     "test": "node scripts/test-node.cjs",
-    "format": "prettier --write \"digital_twin/**/*.js\" \"digital_twin/**/*.cjs\" \"tests/**/*.js\" \"scripts/**/*.cjs\"",
-    "format:check": "prettier --check \"digital_twin/**/*.js\" \"digital_twin/**/*.cjs\" \"tests/**/*.js\" \"scripts/**/*.cjs\""
+    "format": "prettier --write \"src/haptiq/digital_twin/**/*.js\" \"src/haptiq/digital_twin/**/*.cjs\" \"tests/**/*.js\" \"scripts/**/*.cjs\" \"src/haptiq/digital_twin/**/*.css\" \"src/haptiq/digital_twin/**/*.html\"",
+    "format:check": "prettier --check \"src/haptiq/digital_twin/**/*.js\" \"src/haptiq/digital_twin/**/*.cjs\" \"tests/**/*.js\" \"scripts/**/*.cjs\" \"src/haptiq/digital_twin/**/*.css\" \"src/haptiq/digital_twin/**/*.html\"",
+    "test:browser": "python scripts/test-browser.py"
   },
   "devDependencies": {
     "playwright": "1.62.1",

@@ -4,13 +4,13 @@ import numpy as np
 import trimesh
 from scipy.spatial.transform import Rotation
 
-from digital_twin.sensor_identification.adapter import normalize_frame
-from digital_twin.sensor_identification.anchored_fit import _contact_surface, fit_anchored
-from digital_twin.sensor_identification.classifier import IdentificationConfig
-from digital_twin.sensor_identification.finite_hand import FiniteHand
-from digital_twin.sensor_identification.geometry import CandidateModel
-from digital_twin.sensor_identification.ray_bvh import TriangleBVH
-from digital_twin.sensor_identification.visible_surface import first_surface
+from haptiq.estimation.adapter import normalize_frame
+from haptiq.estimation.anchored_fit import _contact_surface, fit_anchored
+from haptiq.estimation.classifier import IdentificationConfig
+from haptiq.estimation.finite_hand import FiniteHand
+from haptiq.estimation.geometry import CandidateModel
+from haptiq.estimation.ray_bvh import TriangleBVH
+from haptiq.estimation.visible_surface import first_surface
 
 
 class FiniteHandTests(unittest.TestCase):

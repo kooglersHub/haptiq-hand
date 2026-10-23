@@ -1,8 +1,10 @@
 const fs = require('node:fs'),
   path = require('node:path'),
-  K = require('../digital_twin/joint_kinematics');
+  K = require('../src/haptiq/digital_twin/joint_kinematics');
 const reference = JSON.parse(
-  fs.readFileSync(path.join(__dirname, '../digital_twin/joint_geometry_profiles_for_codex.json')),
+  fs.readFileSync(
+    path.join(__dirname, '../src/haptiq/digital_twin/joint_geometry_profiles_for_codex.json'),
+  ),
 );
 const profiles = {
   rh56_tactile_toolkit_left: reference.primary_profiles.rh56_tactile_toolkit_left,

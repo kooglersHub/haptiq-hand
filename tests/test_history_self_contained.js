@@ -2,7 +2,7 @@ const fs = require('node:fs'),
   vm = require('node:vm'),
   assert = require('node:assert/strict'),
   path = require('node:path');
-const root = path.join(__dirname, '../digital_twin');
+const root = path.join(__dirname, '../src/haptiq/digital_twin');
 const context = { console, setTimeout };
 vm.createContext(context);
 // Reproduce an older server that serves history.js but 404s runs.js.
