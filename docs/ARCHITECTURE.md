@@ -65,3 +65,10 @@ automation. Mutable orchestration state stays inside the application controller.
 inputs. `hand_twin_6dof.html` and `tactile_geometry.json` are generated products. The build does
 not read an earlier generated HTML. `haptiq-build-viewer --check` detects source/output drift.
 The estimator reads independent source assets too. Do not edit the generated HTML manually.
+
+The source asset retains a frozen `tactile_geometry` reference for cross-platform identity.
+The builder recomputes all cells from the meshes. It reuses only the descriptive rectangle
+angle/axes when every physical cell, normal, wire index and other region field matches exactly
+and the rectangle difference is within the existing roundoff tolerance. Physical changes are
+never replaced by reference values. This source reference does not read generated outputs;
+update it only after reviewing an intentional geometry change and its evidence implications.

@@ -33,6 +33,12 @@ class TactileGeometryTests(unittest.TestCase):
         self.assertEqual(self.data["tactile_geometry"], self.geometry)
         self.assertEqual(generated["total_cells"], 1062)
 
+    def test_source_build_retains_cross_platform_geometry_reference(self):
+        source = json.loads((ROOT / "assets/joint_profile_assets.json").read_text(encoding="utf-8"))
+        self.assertEqual(source["tactile_geometry"], self.geometry)
+        # Rebuild from source inputs alone, without extracting the generated viewer.
+        self.assertEqual(self.builder.build(source), self.geometry)
+
     def test_rectangle_roundoff_keeps_reference_only_when_cells_are_identical(self):
         reference = deepcopy(self.geometry["regions"][0])
         region = deepcopy(reference)
